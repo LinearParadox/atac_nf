@@ -1,0 +1,1 @@
+A pipeline for analyzing atac seq data, from QC to alignment to various peak calling to DA
