@@ -12,20 +12,19 @@ process build_index{
     if [[ "${fasta}" == *.gz ]]; then
         gunzip -f ${fasta}
     fi
-    bowtie2-build --threads 8 ${decompressed_genome} genome_index
+    bowtie2-build --threads ${task.cpus} ${decompressed_genome} genome_index
     """
 
 }
 process align{
     cpus 8
     memory 64.GB
-    tag "Bowtie2 - building index"
+    tag "Bowtie2 - aligning reads"
     input:
     tuple val(sample), path(r1), path(r2)
     file index
     val index_name 
     output:
-    path "genome_index.*", emit: index_files
     tuple val(sample), path("aligned.bam"), emit: aligned_bam
     path "${sample}bowtie2_alignment-metrics.txt", emit: alignment_metrics
     script:
