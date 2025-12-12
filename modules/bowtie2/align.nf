@@ -31,7 +31,7 @@ process align{
     script:
     """
     index_file=$(basename ${index_name[0]})
-    index_prefix=\$(echo "$index_name" | sed -E 's/(\\.[0-9]+)?\\.bt2$//')
+    index_prefix=\$(echo "$index_file" | sed -E 's/(\\.[0-9]+)?\\.bt2$//')
     (bowtie2 -x \$index_prefix --very-sensitive -X 2000 --no-discordant --met-file ${sample}bowtie2_alignment-metrics.txt -p ${task.cpus} -1 ${r1} -2 ${r2}) 2> ${sample}bowtie2_alignment-metrics.txt | samtools view -bS -q30 - > aligned.bam
     """
 }
