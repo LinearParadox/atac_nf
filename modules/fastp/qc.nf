@@ -6,14 +6,13 @@
     tuple val(sample), path(r1), path(r2)
     output:
     tuple val(sample), path("R1_merged.fastq.gz"), path("R2_merged.fastq.gz"), emit: reads
+    tuple val(sample), path("machine.txt"), emit: machine_info
     script:
     """
     cat ${r1} > R1_merged.fastq.gz
     cat ${r2} > R2_merged.fastq.gz
+    fcid $(zcat ${r1} | head -n1 | cut -d' ' -f1 | cut -d':' -f1) --by-machine > machine.txt
     """
-
-
-
  }
 process fastP{
     label 'fastp'

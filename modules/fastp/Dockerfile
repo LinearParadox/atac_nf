@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     libisal-dev \
     libdeflate-dev \
+    python3 \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 # Install fastp
 WORKDIR /usr/local/src
@@ -18,4 +20,5 @@ RUN wget -O fastp-v0.26.0.tar.gz https://github.com/OpenGene/fastp/archive/refs/
     mv fastp /usr/local/bin && \
     cd /usr/local/src && \
     rm -rf fastp*
+RUN pip3 install fcid
 WORKDIR /working
