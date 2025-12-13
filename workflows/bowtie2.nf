@@ -1,7 +1,7 @@
 include { build_index } from '../modules/bowtie2/align.nf'
 include { align } from '../modules/bowtie2/align.nf'
 
-workflow qc_samples {
+workflow bowtie2 {
     take:
         samples
         index
@@ -10,11 +10,16 @@ workflow qc_samples {
     if(file(index).exists()){
         if (index.isDirectory){
             index = channel.fromPath(index+"/*bt2").collect()
+        } else{
+            index = channel.fromPath(index).collect()
         }
     } else{
         index = build_index(fasta).collect()
     }
     aligned = align(samples, index)
-    emit:
 
+
+    emit:
+        aligned = aligned.aligned_bam
+        alignment_metrics = aligned.alignment_metrics
     }

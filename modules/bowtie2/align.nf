@@ -1,4 +1,5 @@
 process build_index{
+    publishDir "${params.outdir}/ref/index", mode: 'copy', when: params.save_index, pattern: '*.bt2'
     cpus 8
     memory 64.GB
     tag "Bowtie2 - building index"
@@ -23,13 +24,12 @@ process align{
     input:
     tuple val(sample), path(r1), path(r2)
     file index
-    val index_name 
     output:
     tuple val(sample), path("aligned.bam"), emit: aligned_bam
     path "${sample}bowtie2_alignment-metrics.txt", emit: alignment_metrics
     script:
     """
-    index_file=$(basename ${index_name[0]})
+    index_file=$(basename ${index[0]})
     index_prefix=\$(echo "$index_file" | sed -E 's/(\\.[0-9]+)?\\.bt2$//')
     (bowtie2 -x \$index_prefix --very-sensitive -X 2000 --no-discordant --met-file ${sample}bowtie2_alignment-metrics.txt -p ${task.cpus} -1 ${r1} -2 ${r2}) 2> ${sample}bowtie2_alignment-metrics.txt | samtools view -bS -q30 - > aligned.bam
     """
