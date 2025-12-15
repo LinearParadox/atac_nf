@@ -1,13 +1,11 @@
 process build_index{
-    publishDir "${params.outdir}/ref/index", mode: 'copy', when: params.save_index, pattern: '*.bt2'
     cpus 8
     memory 64.GB
-    tag "Bowtie2 - building index"
     label 'post_align_sort'
     input:
-    tuple val sample, file bam
+    tuple val(sample), file(bam)
     output:
-    tuple val sample, path "Aligned.sorted.bam", path "Aligned.sorted.bam.bai", emit: indexed_bam
+    tuple val(sample), path "Aligned.sorted.bam", path "Aligned.sorted.bam.bai", emit: indexed_bam
     output:    
     path "samtools_idxstats.txt", emit: index_stats
     path "Aligned.sorted.bam", emit: sorted_bam
@@ -28,7 +26,7 @@ process remove_mt{
     input:
     tuple val(sample), file(bam)
     output:
-    tuple val sample, path "Aligned.sorted.noMT.bam", path "Aligned.sorted.noMT.bam.bai", emit: filtered_bam
+    tuple val(sample), path("Aligned.sorted.noMT.bam"), path("Aligned.sorted.noMT.bam.bai"), emit: filtered_bam
     script:
     """
     samtools view -h ${bam} | python3 /tools/remove_chrom.py - - chrM | samtools view -b - > Aligned.sorted.noMT.bam
@@ -37,13 +35,14 @@ process remove_mt{
 }
 
 process dedup{
-    cpus 4
-    memory 16.GB
+    publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*noMT.noDup*"
+    cpus 8
+    memory 32.GB
     label "dedup"
     input:
-    tuple val(sample), file(bam), file(indexed_bam), file(machine_info)
+    tuple val(sample), file(bam), file(indexed_bam)
     output:
-    tuple val sample, path "Aligned.sorted.noMT.noDup.bam", path "Aligned.sorted.noMT.noDup.bam", emit: filtered_bam
+    tuple val(sample), path("Aligned.sorted.noMT.noDup.bam"), path("Aligned.sorted.noMT.noDup.bam.bai"), emit: filtered_bam
     file "${sample}duplication_stats.txt", emit: duplication_stats
     script:
     """
@@ -54,5 +53,20 @@ process dedup{
     rm tmp.bam
     samtools rmdup -@ ${task.cpus} -r -f "${sample}duplication_stats.txt" tmp_fixmate.bam Aligned.sorted.noMT.noDup.bam
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.bam
+    """
+}
+process get_primary{
+    cpus 4
+    memory 16.GB
+    label "samtools"
+    input:
+    tuple val(sample), file(bam), file(indexed_bam)
+    output:
+    tuple val(sample), path("Aligned.sorted.noMT.noDup.primary.bam"), path("Aligned.sorted.noMT.noDup.primary.bam.bai"), emit: primary_bam
+    file "${sample}duplication_stats.txt", emit: duplication_stats
+    script:
+    """
+    samtools view -b -F 0x900 -o Aligned.sorted.noMT.noDup.primary.bam ${bam}
+    samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.primary.bam    
     """
 }
