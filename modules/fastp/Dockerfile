@@ -20,5 +20,4 @@ RUN wget -O fastp-v0.26.0.tar.gz https://github.com/OpenGene/fastp/archive/refs/
     mv fastp /usr/local/bin && \
     cd /usr/local/src && \
     rm -rf fastp*
-RUN pip3 install fcid
 WORKDIR /working

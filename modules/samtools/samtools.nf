@@ -49,27 +49,10 @@ process dedup{
     """
     sort_memory="${task.config.sort_memory ?: '2G'}"
     sort_threads="${task.config.sort_threads ?: task.cpus}"
-
-    distance=$(python3 -c '
-    file=open("machine_info", "r")
-    instrument=file.readline().strip()
-    unpatterned = ["MiSeq",
-                "NextSeq 500", 
-                "NextSeq 550", 
-                "MiniSeq", 
-                "HiSeq 1000", 
-                "HiSeq 1500",
-                "HiSeq 2000",
-                "HiSeq 2500"]
-    if instrument in unpatterned:
-        print(100)
-    else:
-        print(2500)
-    ')
     samtools collate -@ ${task.cpus} -o tmp.bam ${bam}
     samtools fixmate -@ ${task.cpus} tmp.bam tmp_fixmate.bam
     rm tmp.bam
-    samtools rmdup -@ ${task.cpus} -r -f "${sample}duplication_stats.txt" -d \${distance} tmp_fixmate.bam Aligned.sorted.noMT.noDup.bam
+    samtools rmdup -@ ${task.cpus} -r -f "${sample}duplication_stats.txt" tmp_fixmate.bam Aligned.sorted.noMT.noDup.bam
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.bam
     """
 }
