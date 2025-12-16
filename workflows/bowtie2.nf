@@ -7,8 +7,9 @@ workflow bowtie2 {
         index
         fasta
     main:
-    if(file(index).exists()){
-        if (index.isDirectory){
+    if(index && file(index).exists()){
+        def index_file = file(index)
+        if (index_file.isDirectory()){
             index = channel.fromPath(index+"/*bt2").collect()
         } else{
             index = channel.fromPath(index).collect()
