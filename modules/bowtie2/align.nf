@@ -2,6 +2,7 @@ process build_index{
     publishDir "${params.outdir}/ref/index", mode: 'copy', when: params.save_index, pattern: '*.bt2'
     cpus 8
     memory 64.GB
+    label "arm64_capable"
     tag "Bowtie2 - building index"
     input:
     file fasta
@@ -29,6 +30,7 @@ process build_index{
 process align{
     cpus 8
     memory 64.GB
+    label "arm64_capable"
     tag "Bowtie2 - aligning reads"
     input:
     tuple val(sample), path(r1), path(r2)

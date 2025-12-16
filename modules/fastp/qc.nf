@@ -1,6 +1,7 @@
  process merge_lanes{
     cpus 1
     memory 8.GB
+    label "arm64_capable"
     tag "Merging lanes"
     input:
     tuple val(sample), path(r1), path(r2)

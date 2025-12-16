@@ -3,6 +3,7 @@ process multiqc{
     memory 4.GB
     tag "MultiQC"
     publishDir "${params.outdir}/", mode: 'copy'
+    label "arm64_capable"
     input:
     path fastp_logs
     path bowtie2_logs
