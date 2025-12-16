@@ -11,6 +11,11 @@
     cat ${r1} > R1_merged.fastq.gz
     cat ${r2} > R2_merged.fastq.gz
     """
+    stub:
+    """
+    touch R1_merged.fastq.gz
+    touch R2_merged.fastq.gz
+    """
  }
 process fastP{
     label 'fastp'
@@ -26,5 +31,12 @@ process fastP{
     script:
     """
     fastp -i ${r1} -I ${r2} -o R1_trimmed.fastq.gz -O R2_trimmed.fastq.gz -j ${sample}.json -h ${sample}.html --detect_adapter_for_pe -w ${task.cpus}
+    """
+    stub:
+    """
+    touch ${sample}.json
+    touch ${sample}.html
+    touch R1_trimmed.fastq.gz
+    touch R2_trimmed.fastq.gz
     """
 }

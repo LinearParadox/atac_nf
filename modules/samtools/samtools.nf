@@ -17,6 +17,12 @@ process index{
     samtools index -@ ${task.cpus} Aligned.sorted.bam
     samtools idxstats Aligned.sorted.bam > ${sample}_rawsamtools_idxstats.txt
     """
+    stub:
+    """
+    touch Aligned.sorted.bam
+    touch Aligned.sorted.bam.bai
+    touch ${sample}_rawsamtools_idxstats.txt
+    """
 }
 
 process remove_mt{
@@ -33,6 +39,12 @@ process remove_mt{
     samtools view -h ${bam} | python3 /tools/remove_chrom.py - - chrM | samtools view -b - > Aligned.sorted.noMT.bam
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.bam
     samtools idxstats Aligned.sorted.noMT.bam > ${sample}_noMT_samtools_idxstats.txt
+    """
+    stub:
+    """
+    touch Aligned.sorted.noMT.bam
+    touch Aligned.sorted.noMT.bam.bai
+    touch ${sample}_noMT_samtools_idxstats.txt
     """
 }
 
@@ -56,6 +68,12 @@ process dedup{
     samtools rmdup -@ ${task.cpus} -r -f "${sample}duplication_stats.txt" tmp_fixmate.bam Aligned.sorted.noMT.noDup.bam
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.bam
     """
+    stub:
+    """
+    touch Aligned.sorted.noMT.noDup.bam
+    touch Aligned.sorted.noMT.noDup.bam.bai
+    touch ${sample}duplication_stats.txt
+    """
 }
 process get_primary{
     cpus 4
@@ -70,5 +88,11 @@ process get_primary{
     """
     samtools view -b -F 0x900 -o Aligned.sorted.noMT.noDup.primary.bam ${bam}
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.primary.bam    
+    """
+    stub:
+    """
+    touch Aligned.sorted.noMT.noDup.primary.bam
+    touch Aligned.sorted.noMT.noDup.primary.bam.bai
+    touch ${sample}duplication_stats.txt
     """
 }

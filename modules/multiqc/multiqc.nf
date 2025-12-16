@@ -61,4 +61,8 @@ module_order:
     multiqc -c multiqc_config.yaml .
 
     """
+    stub:
+    """
+    touch multiqc_report.html
+    """
 }

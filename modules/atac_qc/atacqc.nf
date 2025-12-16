@@ -81,4 +81,10 @@ process atac_qc{
         abline(v=seq(0, 100, by=10)+1, lty=2, col="gray")
     dev.off()
     """
+    stub:
+    """
+    touch fragment_size_distribution.pdf
+    touch TSS_enrichment_heatmap.pdf
+    touch TSS_profile_plot.pdf
+    """
 }

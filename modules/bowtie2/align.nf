@@ -15,6 +15,15 @@ process build_index{
     fi
     bowtie2-build --threads ${task.cpus} ${decompressed_genome} genome_index
     """
+    stub:
+    """
+    touch genome_index.1.bt2
+    touch genome_index.2.bt2
+    touch genome_index.3.bt2
+    touch genome_index.4.bt2
+    touch genome_index.rev.1.bt2
+    touch genome_index.rev.2.bt2
+    """
 
 }
 process align{
@@ -34,5 +43,10 @@ process align{
     index_file=$(basename ${index[0]})
     index_prefix=\$(echo "\$index_file" | sed -E 's/(\\.[0-9]+)?\\.bt2$//')
     (bowtie2 -x \$index_prefix --very-sensitive -X ${fragment_size} --no-discordant -k ${multimapping} -p ${task.cpus} -1 ${r1} -2 ${r2}) 2> ${sample}bowtie2_alignment-metrics.txt | samtools view -bS -q30 - > aligned.bam
+    """
+    stub:
+    """
+    touch aligned.bam
+    touch ${sample}bowtie2_alignment-metrics.txt
     """
 }
