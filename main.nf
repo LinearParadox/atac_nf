@@ -7,6 +7,7 @@
 include { qc_samples } from './workflows/qc.nf'
 include { build_index } from 'modules/bowtie2/align.nf'
 include { bowtie2 } from './workflows/bowtie2.nf'
+include { sam } from './workflows/samtools_filtering.nf'
 
 workflow {
     if ( !params.samplesheet){
@@ -24,9 +25,9 @@ workflow {
         } | groupTuple()
         qc_samples(samples)
         bowtie2(samples, params.bowtie_index, params.reference_fasta)
+        sam( bowtie2.aligned_bam )
         
-
-
+        
         }
 
 

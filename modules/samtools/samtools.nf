@@ -1,15 +1,15 @@
-process build_index{
+process index{
     cpus 8
     memory 64.GB
     label 'post_align_sort'
     input:
     tuple val(sample), file(bam)
     output:
-    tuple val(sample), path "Aligned.sorted.bam", path "Aligned.sorted.bam.bai", emit: indexed_bam
-    output:    
+    tuple val(sample), path("Aligned.sorted.bam"), path("Aligned.sorted.bam.bai"), emit: indexed_bam
     path "samtools_idxstats.txt", emit: index_stats
-    path "Aligned.sorted.bam", emit: sorted_bam
     script:
+    sort_memory="${task.config.sort_memory ?: '2G'}"
+    sort_threads="${task.config.sort_threads ?: task.cpus}"
     """
     sort_memory="${task.config.sort_memory ?: '2G'}"
     sort_threads="${task.config.sort_threads ?: task.cpus}"
