@@ -5,7 +5,7 @@
  */
 
 include { qc_samples } from './workflows/qc.nf'
-include { build_index } from 'modules/bowtie2/align.nf'
+include { build_index } from './modules/bowtie2/align.nf'
 include { bowtie2 } from './workflows/bowtie2.nf'
 include { sam } from './workflows/samtools_filtering.nf'
 include { multiqc } from './modules/multiqc/multiqc.nf'
