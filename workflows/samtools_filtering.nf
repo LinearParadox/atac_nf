@@ -17,5 +17,7 @@ workflow sam {
         aligned = aligned.filtered_bam
         primary_bams = primary_bams.primary_bam
         dup_metrics = aligned.duplication_stats
+        raw_metrics = index.index_stats
+        filtered_metrics = aligned_filt.noMT_idxstats
         qc_plots = aligned_filt | atac_qc( organism: params.organism )
     }

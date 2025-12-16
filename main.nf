@@ -8,6 +8,7 @@ include { qc_samples } from './workflows/qc.nf'
 include { build_index } from 'modules/bowtie2/align.nf'
 include { bowtie2 } from './workflows/bowtie2.nf'
 include { sam } from './workflows/samtools_filtering.nf'
+include { multiqc } from './modules/multiqc/multiqc.nf'
 
 workflow {
     if ( !params.samplesheet){
@@ -26,9 +27,13 @@ workflow {
         qc_samples(samples)
         bowtie2(samples, params.bowtie_index, params.reference_fasta)
         sam( bowtie2.aligned_bam )
-        
-        
-        }
+    }
+    multiqc(qc_samples.out.multiqc.collect().ifEmpty([]),
+            bowtie2.out.alignment_metrics.collect().ifEmpty([]),
+            sam.out.raw_metrics.collect().ifEmpty([]),
+            sam.out.filtered_metrics.collect().ifEmpty([]),
+            sam.out.dup_metrics.collect().ifEmpty([]))
+    
 
 
 
