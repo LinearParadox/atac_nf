@@ -33,7 +33,7 @@ process remove_mt{
     tuple val(sample), file(bam)
     output:
     tuple val(sample), path("Aligned.sorted.noMT.bam"), path("Aligned.sorted.noMT.bam.bai"), emit: filtered_bam
-    file "*${sample}_noMT_samtools_idxstats.txt", emit: noMT_idxstats
+    path "*${sample}_noMT_samtools_idxstats.txt", emit: noMT_idxstats
     script:
     """
     samtools view -h ${bam} | python3 /tools/remove_chrom.py - - chrM | samtools view -b - > Aligned.sorted.noMT.bam
@@ -57,7 +57,7 @@ process dedup{
     tuple val(sample), file(bam), file(indexed_bam)
     output:
     tuple val(sample), path("Aligned.sorted.noMT.noDup.bam"), path("Aligned.sorted.noMT.noDup.bam.bai"), emit: filtered_bam
-    file "${sample}duplication_stats.txt", emit: duplication_stats
+    path "${sample}duplication_stats.txt", emit: duplication_stats
     script:
     """
     sort_memory="${task.config.sort_memory ?: '2G'}"
@@ -83,7 +83,7 @@ process get_primary{
     tuple val(sample), file(bam), file(indexed_bam)
     output:
     tuple val(sample), path("Aligned.sorted.noMT.noDup.primary.bam"), path("Aligned.sorted.noMT.noDup.primary.bam.bai"), emit: primary_bam
-    file "${sample}duplication_stats.txt", emit: duplication_stats
+    path "${sample}duplication_stats.txt", emit: duplication_stats
     script:
     """
     samtools view -b -F 0x900 -o Aligned.sorted.noMT.noDup.primary.bam ${bam}

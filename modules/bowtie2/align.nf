@@ -40,8 +40,8 @@ process align{
     path "${sample}bowtie2_alignment-metrics.txt", emit: alignment_metrics
     script:
     """
-    index_file=$(basename ${index[0]})
-    index_prefix=\$(echo "\$index_file" | sed -E 's/(\\.[0-9]+)?\\.bt2$//')
+    index_file=\$(basename ${index[0]})
+    index_prefix=\$(echo "\$index_file" | sed -E 's/(\\.[0-9]+)?\\.bt2\$//')
     (bowtie2 -x \$index_prefix --very-sensitive -X ${fragment_size} --no-discordant -k ${multimapping} -p ${task.cpus} -1 ${r1} -2 ${r2}) 2> ${sample}bowtie2_alignment-metrics.txt | samtools view -bS -q30 - > aligned.bam
     """
     stub:
