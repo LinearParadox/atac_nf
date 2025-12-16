@@ -16,10 +16,10 @@ workflow bowtie2 {
     } else{
         index = build_index(fasta).collect()
     }
-    aligned = align(samples, index)
+    aligned = align(samples, params.fragment_size, params.multimap, index)
 
 
     emit:
-        aligned = aligned.aligned_bam
+        aligned_bam = aligned.aligned_bam
         alignment_metrics = aligned.alignment_metrics
     }

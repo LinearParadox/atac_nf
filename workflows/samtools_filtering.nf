@@ -10,14 +10,16 @@ workflow sam {
     take:
         bams
     main:
-    aligned_filt = bams | index | remove_mt
-    aligned = aligned_filt | dedup
-    primary_bams = aligned.filtered_bam | get_primary
+    indexed = index(bams)
+    aligned_filt = remove_mt(indexed.indexed_bam)
+    aligned = dedup(aligned_filt.filtered_bam)
+    primary_bams = get_primary(aligned.filtered_bam)
+    qc_plots = atac_qc(aligned_filt.filtered_bam, params.organism)
     emit:
         aligned = aligned.filtered_bam
         primary_bams = primary_bams.primary_bam
         dup_metrics = aligned.duplication_stats
-        raw_metrics = index.index_stats
+        raw_metrics = indexed.index_stats
         filtered_metrics = aligned_filt.noMT_idxstats
-        qc_plots = aligned_filt | atac_qc( organism: params.organism )
+        qc_plots = qc_plots
     }

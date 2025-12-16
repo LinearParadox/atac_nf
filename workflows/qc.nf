@@ -6,10 +6,9 @@ workflow qc_samples {
         samples
     main:
         merged_reads = merge_lanes(samples)
-        fastp_results = fastP(merged_reads)
+        fastp_results = fastP(merged_reads.reads)
 
     emit:
         trimmed = fastp_results.reads
         multiqc = fastp_results.fastp_results
-        machine_info = merged_reads.machine_info
     }
