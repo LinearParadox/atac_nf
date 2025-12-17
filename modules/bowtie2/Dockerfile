@@ -1,10 +1,10 @@
 FROM ubuntu
 
-ARG TARGETPLATFORM
+ARG TARGETARCH
 
 WORKDIR /tools
 RUN apt-get update && \
-    apt-get install -y build-essential wget curl unzip apt-transport-https ca-certificates gnupg curl libncurses5-dev zlib1g-dev liblzma-dev pigz python3 pipx python3.12-venv dos2unix && \
+    apt-get install -y build-essential wget curl unzip apt-transport-https ca-certificates gnupg libncurses-dev zlib1g-dev liblzma-dev pigz python3 pipx python3.12-venv dos2unix bzip2 && \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /tools
 RUN set -eux; \
