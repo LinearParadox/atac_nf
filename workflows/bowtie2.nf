@@ -15,7 +15,7 @@ workflow bowtie2 {
             index = channel.fromPath(index).collect()
         }
     } else{
-        index = build_index(fasta).collect()
+        index = build_index(file(params.fasta)).collect()
     }
     aligned = align(samples, params.fragment_size, params.multimap, index)
 

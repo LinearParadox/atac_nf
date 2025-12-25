@@ -12,9 +12,8 @@ process index{
     path "*${sample}_rawsamtools_idxstats.txt", emit: index_stats
     script:
     sort_memory="{ task.attempt > 1 ? task.previousTrace.memory * 2 : (2.GB) }"
-    sort_threads="${task.config.sort_threads ?: task.cpus}"
     """
-    samtools sort -@ ${sort_threads} -m ${sort_memory} -o Aligned.sorted.bam ${bam}
+    samtools sort -@ ${task.cpus} -m ${sort_memory} -o Aligned.sorted.bam ${bam}
     samtools index -@ ${task.cpus} Aligned.sorted.bam
     samtools idxstats Aligned.sorted.bam > ${sample}_rawsamtools_idxstats.txt
     """
@@ -64,7 +63,6 @@ process dedup{
     path "${sample}_duplication_stats.txt", emit: duplication_stats
     script:
     sort_memory={ task.attempt > 1 ? task.previousTrace.memory * 2 : (2.GB) }
-    sort_threads="${task.config.sort_threads ?: task.cpus}"
     """
     samtools collate -@ ${task.cpus} -o tmp.bam ${bam}
     samtools fixmate -@ ${task.cpus} tmp.bam tmp_fixmate.bam
