@@ -33,6 +33,7 @@ process remove_mt{
     label "arm64_capable"
     input:
     tuple val(sample), file(bam), file(index)
+    val style
     output:
     tuple val(sample), path("Aligned.sorted.noMT.bam"), path("Aligned.sorted.noMT.bam.bai"), emit: filtered_bam
     path "*${sample}_noMT_samtools_idxstats.txt", emit: noMT_idxstats
@@ -41,7 +42,12 @@ process remove_mt{
     def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
     """
     wget -O "remove_chrom.py" https://raw.githubusercontent.com/harvardinformatics/ATAC-seq/refs/heads/master/atacseq/removeChrom.py
-    samtools view -h ${bam} | python3 ./remove_chrom.py - - chrM | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o Aligned.sorted.noMT.bam -
+    if [ "${style}" == "ucsc" ]; then
+        CHROM=\$(samtools idxstats ${bam} | cut -f1 | grep -v '^chr([1-9]|1[0-9]|2[0-2]|X|Y)\$')
+    else
+        CHROM="\$(samtools idxstats ${bam} | cut -f1 | grep -v '^([1-9]|1[0-9]|2[0-2]|X|Y)\$')"
+    fi
+    samtools view -h ${bam} | python3 ./remove_chrom.py - - \${CHROM} | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o Aligned.sorted.noMT.bam -
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.bam
     samtools idxstats Aligned.sorted.noMT.bam > ${sample}_noMT_samtools_idxstats.txt
     """
