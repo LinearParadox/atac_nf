@@ -34,10 +34,4 @@ workflow {
             sam.out.filtered_metrics.collect().ifEmpty([]),
             sam.out.dup_metrics.collect().ifEmpty([]))
     
-
-
-
-
-    
-
 }
