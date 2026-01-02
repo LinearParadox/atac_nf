@@ -5,7 +5,6 @@ workflow bowtie2 {
     take:
         samples
         index
-        fasta
     main:
     if(index && file(index).exists()){
         def index_file = file(index)
