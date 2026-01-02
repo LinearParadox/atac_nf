@@ -11,9 +11,10 @@ process index{
     tuple val(sample), path("Aligned.sorted.bam"), path("Aligned.sorted.bam.bai"), emit: indexed_bam
     path "*${sample}_rawsamtools_idxstats.txt", emit: index_stats
     script:
-    sort_memory="{ task.attempt > 1 ? task.previousTrace.memory * 2 : (2.GB) }"
+    def total_mem_mb = task.memory.toMega()
+    def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
     """
-    samtools sort -@ ${task.cpus} -m ${sort_memory} -o Aligned.sorted.bam ${bam}
+    samtools sort -@ ${task.cpus} -m ${sort_memory}M -o Aligned.sorted.bam ${bam}
     samtools index -@ ${task.cpus} Aligned.sorted.bam
     samtools idxstats Aligned.sorted.bam > ${sample}_rawsamtools_idxstats.txt
     """
@@ -36,8 +37,11 @@ process remove_mt{
     tuple val(sample), path("Aligned.sorted.noMT.bam"), path("Aligned.sorted.noMT.bam.bai"), emit: filtered_bam
     path "*${sample}_noMT_samtools_idxstats.txt", emit: noMT_idxstats
     script:
+    def total_mem_mb = task.memory.toMega()
+    def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
     """
-    samtools view -h ${bam} | python3 /tools/remove_chrom.py - - chrM | samtools view -b - > Aligned.sorted.noMT.bam
+    wget -O "remove_chrom.py" https://raw.githubusercontent.com/harvardinformatics/ATAC-seq/refs/heads/master/atacseq/removeChrom.py
+    samtools view -h ${bam} | python3 ./remove_chrom.py - - chrM | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o Aligned.sorted.noMT.bam -
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.bam
     samtools idxstats Aligned.sorted.noMT.bam > ${sample}_noMT_samtools_idxstats.txt
     """
@@ -62,12 +66,13 @@ process dedup{
     tuple val(sample), path("Aligned.sorted.noMT.noDup.bam"), path("Aligned.sorted.noMT.noDup.bam.bai"), emit: filtered_bam
     path "${sample}_duplication_stats.txt", emit: duplication_stats
     script:
-    sort_memory={ task.attempt > 1 ? task.previousTrace.memory * 2 : (2.GB) }
+    def total_mem_mb = task.memory.toMega()
+    def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
     """
-    samtools collate -@ ${task.cpus} -o tmp.bam ${bam}
-    samtools fixmate -@ ${task.cpus} tmp.bam tmp_fixmate.bam
-    rm tmp.bam
-    samtools rmdup -@ ${task.cpus} -r -f "${sample}_duplication_stats.txt" tmp_fixmate.bam Aligned.sorted.noMT.noDup.bam
+    samtools collate -@ ${task.cpus} -u -O ${bam} | \
+    samtools fixmate -m -u - - | \
+    samtools sort -@ ${task.cpus} -m ${sort_memory}M -u - | \
+    samtools markdup -@ ${task.cpus} -r -f "${sample}_duplication_stats.txt" - Aligned.sorted.noMT.noDup.bam
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.bam
     """
     stub:
