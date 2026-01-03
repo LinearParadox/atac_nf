@@ -1,11 +1,12 @@
 process atac_qc{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*.pdf"
+    publishDir "${params.outdir}/per-sample-outs/${sample}/qc/", mode: 'copy', pattern: "*.pdf"
     cpus 8
     memory 64.GB
     tag "ATAC-QC"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
     val organism
+    val style
     output:
     path "*pdf"
     script:
@@ -16,7 +17,7 @@ process atac_qc{
     library(ChIPpeakAnno)
     library(Rsamtools)
     library(BiocParallel)
-    register(MulticoreParam(floor(${task.cpus}/2)), default=TRUE)
+    register(MulticoreParam(floor(${task.cpus}/4)), default=TRUE)
     if ( "${organism}" == "human" ) {
         library(EnsDb.Hsapiens.v86)
         edb <- EnsDb.Hsapiens.v86
@@ -28,10 +29,17 @@ process atac_qc{
         library(${organism})
         edb <- get(${organism})
     }
-    pdf("fragment_size_distribution.pdf", width=10, height=7, unit="in", res=300)
-        fragSize <- fragSizeDist(${bam}, "frag-size-distribution")
+   if(${style} == "ucsc"){
+        options(ucscChromosomeNames=TRUE)
+        seqlevelsStyle(edb) <- "UCSC"
+    } else{
+        options(ucscChromosomeNames=FALSE)
+    }
+    pdf("fragment_size_distribution.pdf", width=10, height=7)
+        fragSize <- fragSizeDist("${bam}", "frag-size-distribution")
     dev.off()
-    bam_qc=bamQC(${bam}, outPath = NULL)
+    bamFile <- "${bam}"
+    bam_qc=bamQC("${bam}", outPath = NULL)
     outPath = "splitBam"
     possibleTag = combn(LETTERS, 2)
     possibleTag = c(paste0(possibleTag[1, ], possibleTag[2, ]),
@@ -43,10 +51,10 @@ process atac_qc{
     gal = readBamFile(bamFile, tag=tags, asMates=TRUE, bigFile=TRUE)
     gal1 = shiftGAlignmentsList(gal)
     txs = transcripts(edb)
-    objs = splitGAlignmentsByCut(gal1, txs=txs, genome=genome, outPath = outPath)
+    objs = splitGAlignmentsByCut(gal1, txs=txs, genome=edb, outPath = outPath)
     TSS <- promoters(txs, upstream=0, downstream=1)
     TSS <- unique(TSS)
-    librarySize <- estLibSize(bamFiles)
+    librarySize <- estLibSize(c(bamFile))
     NTILE <- 101
     dws <- ups <- 1010
     sigs <- enrichedFragments(gal=objs[c("NucleosomeFree",
