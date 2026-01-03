@@ -7,6 +7,7 @@ process atac_qc{
     tuple val(sample), file(bam), file(indexed_bam)
     val organism
     val style
+    val ah_hub_id
     output:
     path "*pdf"
     script:
@@ -17,23 +18,31 @@ process atac_qc{
     library(ChIPpeakAnno)
     library(Rsamtools)
     library(BiocParallel)
+    library(AnnotationHub)
     register(MulticoreParam(floor(${task.cpus}/4)), default=TRUE)
+    ah <- AnnotationHub()
     if ( "${organism}" == "human" ) {
-        library(EnsDb.Hsapiens.v86)
-        edb <- EnsDb.Hsapiens.v86
+        if ( "${ah_hub_id}" != "" ) {
+            edb <- ah[[ "${ah_hub_id}" ]]
+        } else {
+            ahDb <- query(ah, pattern = c("Homo Sapiens", "EnsDb"))
+            id <- names(ahDb)[length(ahDb)]
+            edb <- ah[[id]]
+        }
     } else if ( "${organism}" == "mouse" ) {
-        library(EnsDb.Mmusculus.v79)
-        edb <- EnsDb.Mmusculus.v79
+            if ( "${ah_hub_id}" != "" ) {
+                edb <- ah[[ "${ah_hub_id}" ]]
+        } else {
+            ahDb <- query(ah, pattern = c("Mus musculus", "EnsDb"))
+            id <- names(ahDb)[length(ahDb)]
+            edb <- ah[[id]]
+        }
     } else {
-        BiocManager::install("${organism}")
-        library(${organism})
-        edb <- get(${organism})
+        edb <- ah[[${ah_hub_id}]]
     }
    if(${style} == "ucsc"){
         options(ucscChromosomeNames=TRUE)
         seqlevelsStyle(edb) <- "UCSC"
-    } else{
-        options(ucscChromosomeNames=FALSE)
     }
     pdf("fragment_size_distribution.pdf", width=10, height=7)
         fragSize <- fragSizeDist("${bam}", "frag-size-distribution")
