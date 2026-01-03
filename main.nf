@@ -25,7 +25,7 @@ workflow {
             return [sample, r1, r2]
         } | groupTuple()
         qc_samples(samples)
-        bowtie2(samples, params.bowtie_index, params.fasta)
+        bowtie2(samples, params.bowtie_index)
         sam( bowtie2.out.aligned_bam )
     }
     multiqc(qc_samples.out.multiqc.collect().ifEmpty([]),
