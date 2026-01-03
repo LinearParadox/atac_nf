@@ -14,7 +14,7 @@ workflow sam {
     dedup_results = dedup(indexed.indexed_bam)
     aligned_filt = remove_mt(dedup_results.filtered_bam, params.style)
     primary_bams = get_primary(aligned_filt.filtered_bam)
-    qc_plots = atac_qc(primary_bams.primary_bam, params.organism, params.style)
+    qc_plots = atac_qc(primary_bams.primary_bam, params.organism, params.style, params.ah_hub_id)
     emit:
         aligned = dedup_results.filtered_bam
         primary_bams = primary_bams.primary_bam
