@@ -43,9 +43,9 @@ process remove_mt{
     """
     wget -O "remove_chrom.py" https://raw.githubusercontent.com/harvardinformatics/ATAC-seq/refs/heads/master/atacseq/removeChrom.py
     if [ "${style}" == "ucsc" ]; then
-        CHROM=\$(samtools idxstats ${bam} | cut -f1 | grep -v '^chr([1-9]|1[0-9]|2[0-2]|X|Y)\$')
+        CHROM=\$(samtools idxstats ${bam} | cut -f1 | grep -E -v '^chr([1-9]|1[0-9]|2[0-2]|X|Y)\$')
     else
-        CHROM="\$(samtools idxstats ${bam} | cut -f1 | grep -v '^([1-9]|1[0-9]|2[0-2]|X|Y)\$')"
+        CHROM="\$(samtools idxstats ${bam} | cut -f1 | grep -E -v '^([1-9]|1[0-9]|2[0-2]|X|Y)\$')"
     fi
     samtools view -h ${bam} | python3 ./remove_chrom.py - - \${CHROM} | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o Aligned.sorted.noMT.bam -
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.bam
@@ -61,9 +61,10 @@ process remove_mt{
 
 process dedup{
     publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*noMT.noDup*"
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    errorStrategy { task.exitStatus in 137..172 ? 'retry' : 'terminate' }
     maxRetries 3
     cpus 8
+    disk { 375.GB * task.attempt }
     memory { task.attempt > 1 ? task.previousTrace.memory * 2 : (64.GB) }
     label "arm64_capable"
     input:
@@ -76,8 +77,12 @@ process dedup{
     def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
     """
     samtools collate -@ ${task.cpus} -u -O ${bam} | \
-    samtools fixmate -m -u - - | \
-    samtools sort -@ ${task.cpus} -m ${sort_memory}M -u - | \
+    samtools fixmate -m - tmp.bam
+    if ! samtools quickcheck tmp.bam; then
+       echo "Collate failed for ${sample}"
+       exit 142
+    fi
+    samtools sort -@ ${task.cpus} -m ${sort_memory}M -u tmp.bam | \
     samtools markdup -@ ${task.cpus} -r -f "${sample}_duplication_stats.txt" - Aligned.sorted.noMT.noDup.bam
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.bam
     """
@@ -89,6 +94,7 @@ process dedup{
     """
 }
 process get_primary{
+    publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*.primary*"
     cpus 4
     memory 16.GB
     label "arm64_capable"
