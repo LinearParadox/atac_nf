@@ -14,32 +14,16 @@ process multiqc{
     path "multiqc_report.html", emit: report
     script:
     """
-    echo 'use_filename_as_sample_name:
-  - fastp:
-    - search_pattern: "*.json"
-      fn_clean_exts: 
-        - ".json"
-        - ".html"
-  - bowtie2:
-    - search_pattern: "*bowtie2_alignment-metrics.txt"
-      fn_clean_exts:
-        - "bowtie2_alignment-metrics.txt"
-        - "_alignment-metrics.txt"
-        - ".txt"
-  - samtools/idxstats:
-    - search_pattern: "*_rawsamtools_idxstats.txt"
-      fn_clean_exts: 
-        - "_rawsamtools_idxstats.txt"
-        - ".txt"
-    - search_pattern: "*_noMT_samtools_idxstats.txt"
-      fn_clean_exts:
-        - "_noMT_samtools_idxstats.txt"
-        - ".txt"
-  - samtools:
-    - search_pattern: "*duplication_stats.txt"
-      fn_clean_exts:
-        - "duplication_stats.txt"
-        - ".txt"
+    echo 'use_filename_as_sample_name: true
+fn_clean_exts:
+  - ".json"
+  - ".html"
+  - "bowtie2_alignment-metrics.txt"
+  - "_rawsamtools_idxstats.txt"
+  - "_noMT_samtools_idxstats.txt"
+  - "_duplication_stats.txt"
+  - type: remove
+    pattern: "^.*/"
 module_order:
   - fastp
   - bowtie2
@@ -50,14 +34,13 @@ module_order:
       target: ""
       path_filters:
         - "*_rawsamtools_idxstats.txt"
-    - samtools/idxstats:
+  - samtools/idxstats:
       name: "Samtools idxstats postfilter"
       anchor: "samtools_idxstats_noMT"
       info: "Samtools idxstats after filtering mitochondrial reads."
       target: ""
       path_filters:
         - "*_noMT_samtools_idxstats.txt"
-  
   - samtools' > multiqc_config.yaml
     multiqc -c multiqc_config.yaml .
 
