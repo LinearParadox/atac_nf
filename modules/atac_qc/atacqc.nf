@@ -1,7 +1,9 @@
 process atac_qc{
     publishDir "${params.outdir}/per-sample-outs/${sample}/qc/", mode: 'copy', pattern: "*.pdf"
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries 3
     cpus 8
-    memory 64.GB
+    memory { task.attempt > 1 ? task.previousTrace.memory * 2 : (64.GB) }
     tag "ATAC-QC"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
@@ -40,7 +42,7 @@ process atac_qc{
     } else {
         edb <- ah[[${ah_hub_id}]]
     }
-   if(${style} == "ucsc"){
+   if("${style}" == "ucsc"){
         options(ucscChromosomeNames=TRUE)
         seqlevelsStyle(edb) <- "UCSC"
     }
