@@ -20,7 +20,7 @@
  }
 process fastP{
     label 'fastp'
-    memory 12.GB
+    memory 8.GB
     cpus 4
     tag "FASTP"
     publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*.html"
@@ -31,7 +31,14 @@ process fastP{
     tuple val(sample), path("R1_trimmed.fastq.gz"), path("R2_trimmed.fastq.gz"), emit: reads
     script:
     """
-    fastp -i ${r1} -I ${r2} -o R1_trimmed.fastq.gz -O R2_trimmed.fastq.gz -j ${sample}.json -h ${sample}.html --detect_adapter_for_pe -w ${task.cpus}
+    fastp -i ${r1} -I ${r2} -o R1_trimmed.fastq.gz -O R2_trimmed.fastq.gz \
+     -j ${sample}.json -h ${sample}.html --adapter_sequence CTGTCTCTTATACACATCT \
+     --adapter_sequence_r2 CTGTCTCTTATACACATCT \
+     --detect_adapter_for_pe \ 
+     --correction \
+     --length_required 20 \
+     -w ${task.cpus}
+     
     """
     stub:
     """
