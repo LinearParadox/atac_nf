@@ -4,10 +4,7 @@
  * Basic nextflow pipeline for atac seq
  */
 
-include { qc_samples } from './workflows/qc.nf'
-include { build_index } from './modules/bowtie2/align.nf'
-include { bowtie2 } from './workflows/bowtie2.nf'
-include { filter } from './workflows/samtools_filtering.nf'
+include { process_fastqs } from './workflows/align.nf'
 include { multiqc } from './modules/multiqc/multiqc.nf'
 include { genrich_condition } from './workflows/genrich_condition.nf'
 include { macs3_individual } from './workflows/macs3_individual.nf'
@@ -27,29 +24,28 @@ workflow {
             def r2 = file(fields[2])
             return [sample, r1, r2]
         } | groupTuple()
-        qc_samples(samples)
-        bowtie2(samples, params.bowtie_index)
-        filter( bowtie2.out.aligned_bam )
+        bowtie2 = process_fastqs(samples, params.index)
+
     }
-    multiqc(qc_samples.out.multiqc.collect().ifEmpty([]),
+    multiqc(bowtie2.out.multiqc.collect().ifEmpty([]),
             bowtie2.out.alignment_metrics.collect().ifEmpty([]),
-            filter.out.aligned_flagstat.collect().ifEmpty([]),
-            filter.out.aligned_idxstats.collect().ifEmpty([]),
-            filter.out.aligned_stats.collect().ifEmpty([]),
-            filter.out.dup_metrics.collect().ifEmpty([]))
+            bowtie2.out.aligned_flagstat.collect().ifEmpty([]),
+            bowtie2.out.aligned_idxstats.collect().ifEmpty([]),
+            bowtie2.out.aligned_stats.collect().ifEmpty([]),
+            bowtie2.out.dup_metrics.collect().ifEmpty([]))
     
     /*
     genrich_condition(
         params.condition_samplesheet,
-        filter.out.primary_bams,
+        bowtie2.out.primary_bams,
         file(params.blacklist)
     )
     macs3_individual(
-        filter.out.primary_bams,
+        bowtie2.out.primary_bams,
         params.organism
     )
     fseq2_individual(
-        filter.out.primary_bams,
+        bowtie2.out.primary_bams,
         params.organism
     )
     */

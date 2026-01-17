@@ -34,11 +34,10 @@ process fastP{
     fastp -i ${r1} -I ${r2} -o R1_trimmed.fastq.gz -O R2_trimmed.fastq.gz \
      -j ${sample}.json -h ${sample}.html --adapter_sequence CTGTCTCTTATACACATCT \
      --adapter_sequence_r2 CTGTCTCTTATACACATCT \
-     --detect_adapter_for_pe \ 
+     --detect_adapter_for_pe \
      --correction \
      --length_required 20 \
      -w ${task.cpus}
-     
     """
     stub:
     """
