@@ -3,7 +3,7 @@ process atac_qc{
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 3
     cpus 8
-    memory { task.attempt > 1 ? task.previousTrace.memory * 2 : (64.GB) }
+    memory { task.attempt > 1 ? task.previousTrace.memory * 2 : (96.GB) }
     tag "ATAC-QC"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
