@@ -9,20 +9,17 @@ process index{
     tuple val(sample), file(bam)
     output:
     tuple val(sample), path("Aligned.sorted.bam"), path("Aligned.sorted.bam.bai"), emit: indexed_bam
-    path "*${sample}_rawsamtools_idxstats.txt", emit: index_stats
     script:
     def total_mem_mb = task.memory.toMega()
     def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
     """
     samtools sort -@ ${task.cpus} -m ${sort_memory}M -o Aligned.sorted.bam ${bam}
     samtools index -@ ${task.cpus} Aligned.sorted.bam
-    samtools idxstats Aligned.sorted.bam > ${sample}_rawsamtools_idxstats.txt
     """
     stub:
     """
     touch Aligned.sorted.bam
     touch Aligned.sorted.bam.bai
-    touch ${sample}_rawsamtools_idxstats.txt
     """
 }
 
@@ -37,6 +34,7 @@ process remove_mt{
     output:
     tuple val(sample), path("Aligned.sorted.noMT.bam"), path("Aligned.sorted.noMT.bam.bai"), emit: filtered_bam
     path "*${sample}_noMT_samtools_idxstats.txt", emit: noMT_idxstats
+    path "*${sample}_noMT_flagstat.txt", emit: noMT_flagstat
     script:
     def total_mem_mb = task.memory.toMega()
     def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
@@ -50,12 +48,14 @@ process remove_mt{
     samtools view -h ${bam} | python3 ./remove_chrom.py - - \${CHROM} | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o Aligned.sorted.noMT.bam -
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.bam
     samtools idxstats Aligned.sorted.noMT.bam > ${sample}_noMT_samtools_idxstats.txt
+    samtools flagstat Aligned.sorted.noMT.bam > ${sample}_noMT_flagstat.txt
     """
     stub:
     """
     touch Aligned.sorted.noMT.bam
     touch Aligned.sorted.noMT.bam.bai
     touch ${sample}_noMT_samtools_idxstats.txt
+    touch ${sample}_noMT_flagstat.txt
     """
 }
 
@@ -102,14 +102,63 @@ process get_primary{
     tuple val(sample), file(bam), file(indexed_bam)
     output:
     tuple val(sample), path("Aligned.sorted.noMT.noDup.primary.bam"), path("Aligned.sorted.noMT.noDup.primary.bam.bai"), emit: primary_bam
+    path "*${sample}_primary_samtools_idxstats.txt", emit: primary_idxstats
+    path "*${sample}_primary_flagstat.txt", emit: primary_flagstat
     script:
     """
     samtools view -b -F 0x900 -o Aligned.sorted.noMT.noDup.primary.bam ${bam}
-    samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.primary.bam    
+    samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.primary.bam
+    samtools idxstats Aligned.sorted.noMT.noDup.primary.bam > ${sample}_primary_samtools_idxstats.txt
+    samtools flagstat Aligned.sorted.noMT.noDup.primary.bam > ${sample}_primary_flagstat.txt
     """
     stub:
     """
     touch Aligned.sorted.noMT.noDup.primary.bam
     touch Aligned.sorted.noMT.noDup.primary.bam.bai
+    touch ${sample}_primary_samtools_idxstats.txt
+    touch ${sample}_primary_flagstat.txt
+    """
+}
+
+process namesort{
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries 3
+    cpus 8
+    label "arm64_capable"
+    memory { task.attempt > 1 ? task.previousTrace.memory * 2 : (64.GB) }
+    label 'namesort'
+    input:
+    tuple val(sample), file(bam)
+    output:
+    tuple val(sample), path("namesorted.bam"), path("namesorted.bam.bai"), emit: indexed_bam
+    script:
+    def total_mem_mb = task.memory.toMega()
+    def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
+    """
+    samtools sort -@ ${task.cpus} -m ${sort_memory}M -n -o namesorted.bam ${bam}
+    samtools index -@ ${task.cpus} namesorted.bam
+    """
+    stub:
+    """
+    touch namesorted.bam
+    touch namesorted.bam.bai
+    """
+}
+
+process stats{
+    cpus 4
+    memory 8.GB
+    label "arm64_capable"
+    input:
+    tuple val(sample), file(bam), file(indexed_bam)
+    output:
+    path "*${sample}_primary_samtools_stats.txt", emit: primary_stats
+    script:
+    """
+    samtools stats -@ ${task.cpus} ${bam} > ${sample}_primary_samtools_stats.txt
+    """
+    stub:
+    """
+    touch ${sample}_primary_samtools_stats.txt
     """
 }
