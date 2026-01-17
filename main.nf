@@ -7,8 +7,11 @@
 include { qc_samples } from './workflows/qc.nf'
 include { build_index } from './modules/bowtie2/align.nf'
 include { bowtie2 } from './workflows/bowtie2.nf'
-include { sam } from './workflows/samtools_filtering.nf'
+include { filter } from './workflows/samtools_filtering.nf'
 include { multiqc } from './modules/multiqc/multiqc.nf'
+include { genrich_condition } from './workflows/genrich_condition.nf'
+include { macs3_individual } from './workflows/macs3_individual.nf'
+include { fseq2_individual } from './workflows/fseq2_individual.nf'
 
 workflow {
     if ( !params.samplesheet){
@@ -26,12 +29,30 @@ workflow {
         } | groupTuple()
         qc_samples(samples)
         bowtie2(samples, params.bowtie_index)
-        sam( bowtie2.out.aligned_bam )
+        filter( bowtie2.out.aligned_bam )
     }
     multiqc(qc_samples.out.multiqc.collect().ifEmpty([]),
             bowtie2.out.alignment_metrics.collect().ifEmpty([]),
-            sam.out.raw_metrics.collect().ifEmpty([]),
-            sam.out.filtered_metrics.collect().ifEmpty([]),
-            sam.out.dup_metrics.collect().ifEmpty([]))
+            filter.out.filtered_metrics.collect().ifEmpty([]),
+            filter.out.dup_metrics.collect().ifEmpty([]),
+            filter.out.filtered_flagstat.collect().ifEmpty([]),
+            filter.out.primary_idxstats.collect().ifEmpty([]),
+            filter.out.primary_flagstat.collect().ifEmpty([]),
+            filter.out.primary_stats.collect().ifEmpty([]))
     
-}
+    /*
+    genrich_condition(
+        params.condition_samplesheet,
+        filter.out.primary_bams,
+        file(params.blacklist)
+    )
+    macs3_individual(
+        filter.out.primary_bams,
+        params.organism
+    )
+    fseq2_individual(
+        filter.out.primary_bams,
+        params.organism
+    )
+    */
+}  
