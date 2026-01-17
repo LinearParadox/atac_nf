@@ -45,7 +45,7 @@ process remove_mt{
     else
         CHROM="\$(samtools idxstats ${bam} | cut -f1 | grep -E -v '^([1-9]|1[0-9]|2[0-2]|X|Y)\$')"
     fi
-    samtools view -h ${bam} | python3 ./remove_chrom.py - - \${CHROM} | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o Aligned.sorted.noMT.bam -
+    samtools view -h -F 4 ${bam} | python3 ./remove_chrom.py - - \${CHROM} | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o Aligned.sorted.noMT.bam -
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.bam
     samtools idxstats Aligned.sorted.noMT.bam > ${sample}_noMT_samtools_idxstats.txt
     samtools flagstat Aligned.sorted.noMT.bam > ${sample}_noMT_flagstat.txt
@@ -160,5 +160,38 @@ process stats{
     stub:
     """
     touch ${sample}_primary_samtools_stats.txt
+    """
+}
+
+process subsample{
+    cpus 4
+    memory 8.GB
+    label "arm64_capable"
+    input:
+    tuple val(sample), file(bam), file(indexed_bam)
+    val subsample_reads
+    output:
+    tuple val(sample), path("*.subsampled.bam"), path("*.subsampled.bam.bai"), emit: subsampled_bam
+    script:
+    """
+    # Count total reads in BAM
+    TOTAL_READS=\$(samtools view -c -F 0x900 ${bam})
+    
+    # Calculate subsample fraction
+    if [ \$TOTAL_READS -gt ${subsample_reads} ]; then
+        FRACTION=\$(awk "BEGIN {print ${subsample_reads}/\$TOTAL_READS}")
+        SEED=42
+        samtools view -b -s \${SEED}\${FRACTION} ${bam} > ${sample}.subsampled.bam
+    else
+        # If BAM has fewer reads than subsample target, just copy it
+        cp ${bam} ${sample}.subsampled.bam
+    fi
+    
+    samtools index -@ ${task.cpus} ${sample}.subsampled.bam
+    """
+    stub:
+    """
+    touch ${sample}.subsampled.bam
+    touch ${sample}.subsampled.bam.bai
     """
 }
