@@ -33,12 +33,10 @@ workflow {
     }
     multiqc(qc_samples.out.multiqc.collect().ifEmpty([]),
             bowtie2.out.alignment_metrics.collect().ifEmpty([]),
-            filter.out.filtered_metrics.collect().ifEmpty([]),
-            filter.out.dup_metrics.collect().ifEmpty([]),
-            filter.out.filtered_flagstat.collect().ifEmpty([]),
-            filter.out.primary_idxstats.collect().ifEmpty([]),
-            filter.out.primary_flagstat.collect().ifEmpty([]),
-            filter.out.primary_stats.collect().ifEmpty([]))
+            filter.out.aligned_flagstat.collect().ifEmpty([]),
+            filter.out.aligned_idxstats.collect().ifEmpty([]),
+            filter.out.aligned_stats.collect().ifEmpty([]),
+            filter.out.dup_metrics.collect().ifEmpty([]))
     
     /*
     genrich_condition(

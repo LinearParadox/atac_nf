@@ -145,23 +145,60 @@ process namesort{
     """
 }
 
-process stats{
+process aligned_flagstat{
     cpus 4
     memory 8.GB
     label "arm64_capable"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
     output:
-    path "*${sample}_primary_samtools_stats.txt", emit: primary_stats
+    path "*${sample}_aligned_flagstat.txt", emit: aligned_flagstat
     script:
     """
-    samtools stats -@ ${task.cpus} ${bam} > ${sample}_primary_samtools_stats.txt
+    samtools flagstat ${bam} > ${sample}_aligned_flagstat.txt
     """
     stub:
     """
-    touch ${sample}_primary_samtools_stats.txt
+    touch ${sample}_aligned_flagstat.txt
     """
 }
+
+process aligned_idxstats{
+    cpus 4
+    memory 8.GB
+    label "arm64_capable"
+    input:
+    tuple val(sample), file(bam), file(indexed_bam)
+    output:
+    path "*${sample}_aligned_samtools_idxstats.txt", emit: aligned_idxstats
+    script:
+    """
+    samtools idxstats ${bam} > ${sample}_aligned_samtools_idxstats.txt
+    """
+    stub:
+    """
+    touch ${sample}_aligned_samtools_idxstats.txt
+    """
+}
+
+process aligned_stats{
+    cpus 4
+    memory 8.GB
+    label "arm64_capable"
+    input:
+    tuple val(sample), file(bam), file(indexed_bam)
+    output:
+    path "*${sample}_aligned_samtools_stats.txt", emit: aligned_stats
+    script:
+    """
+    samtools stats -@ ${task.cpus} ${bam} > ${sample}_aligned_samtools_stats.txt
+    """
+    stub:
+    """
+    touch ${sample}_aligned_samtools_stats.txt
+    """
+}
+
 
 process subsample{
     cpus 4
