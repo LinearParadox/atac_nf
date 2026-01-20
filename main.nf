@@ -25,14 +25,35 @@ workflow {
             return [sample, r1, r2]
         } | groupTuple()
         bowtie2 = process_fastqs(samples, params.bowtie_index)
-
-    }
         multiqc(bowtie2.multiqc.collect().ifEmpty([]),
             bowtie2.alignment_metrics.collect().ifEmpty([]),
             bowtie2.aligned_flagstat.collect().ifEmpty([]),
             bowtie2.aligned_idxstats.collect().ifEmpty([]),
             bowtie2.aligned_stats.collect().ifEmpty([]),
             bowtie2.dup_metrics.collect().ifEmpty([]))
+        
+    } else{
+        bam_channel = channel.fromPath(params.samplesheet)
+            .splitCsv()
+            .map { fields ->
+                def sample = fields[0]
+                def primary_bam = file(fields[1])
+                def secondary_bam = file(fields[2])
+                return [sample, primary_bam, secondary_bam]
+            }
+        
+        primary = bam_channel.map { sample, primary_bam, secondary_bam ->
+            def primary_bai = file(primary_bam.toString() + '.bai')
+            [sample, primary_bam, primary_bai]
+        }
+        
+        secondary = bam_channel.map { sample, primary_bam, secondary_bam ->
+            def secondary_bai = file(secondary_bam.toString() + '.bai')
+            [sample, secondary_bam, secondary_bai]
+        }
+        
+    }
+
     
     /*
     genrich_condition(
