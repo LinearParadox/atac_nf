@@ -24,28 +24,28 @@ workflow {
             def r2 = file(fields[2])
             return [sample, r1, r2]
         } | groupTuple()
-        bowtie2 = process_fastqs(samples, params.index)
+        bowtie2 = process_fastqs(samples, params.bowtie_index)
 
     }
-    multiqc(bowtie2.out.multiqc.collect().ifEmpty([]),
-            bowtie2.out.alignment_metrics.collect().ifEmpty([]),
-            bowtie2.out.aligned_flagstat.collect().ifEmpty([]),
-            bowtie2.out.aligned_idxstats.collect().ifEmpty([]),
-            bowtie2.out.aligned_stats.collect().ifEmpty([]),
-            bowtie2.out.dup_metrics.collect().ifEmpty([]))
+        multiqc(bowtie2.multiqc.collect().ifEmpty([]),
+            bowtie2.alignment_metrics.collect().ifEmpty([]),
+            bowtie2.aligned_flagstat.collect().ifEmpty([]),
+            bowtie2.aligned_idxstats.collect().ifEmpty([]),
+            bowtie2.aligned_stats.collect().ifEmpty([]),
+            bowtie2.dup_metrics.collect().ifEmpty([]))
     
     /*
     genrich_condition(
         params.condition_samplesheet,
-        bowtie2.out.primary_bams,
+        bowtie2.primary_bams,
         file(params.blacklist)
     )
     macs3_individual(
-        bowtie2.out.primary_bams,
+        bowtie2.primary_bams,
         params.organism
     )
     fseq2_individual(
-        bowtie2.out.primary_bams,
+        bowtie2.primary_bams,
         params.organism
     )
     */
