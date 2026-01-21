@@ -1,9 +1,12 @@
 process index{
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    errorStrategy { (task.exitStatus == 1 || task.exitStatus in 137..140) ? 'retry' : 'terminate' }
     maxRetries 3
     cpus 8
     label "arm64_capable"
+    label "samtools"
+    label 'index'
     memory { task.attempt > 1 ? task.previousTrace.memory * 2 : (64.GB) }
+    disk { 375.GB * task.attempt }
     label 'post_align_sort'
     input:
     tuple val(sample), file(bam)
@@ -25,9 +28,13 @@ process index{
 
 process remove_mt{
     cpus 4
+    errorStrategy { (task.exitStatus == 1 || task.exitStatus in 137..140) ? 'retry' : 'terminate' }
+    disk { 375.GB * task.attempt }
     memory 16.GB
     tag "filter mt"
     label "arm64_capable"
+    label "samtools"
+    label "remove_mt"
     input:
     tuple val(sample), file(bam), file(index)
     val style
@@ -61,8 +68,10 @@ process remove_mt{
 
 process dedup{
     publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*noMT.noDup*"
-    errorStrategy { task.exitStatus in 137..172 ? 'retry' : 'terminate' }
+    errorStrategy { (task.exitStatus == 1 || task.exitStatus in 137..140) ? 'retry' : 'terminate' }
     maxRetries 3
+    label "samtools"
+    label "dedup"
     cpus 8
     disk { 375.GB * task.attempt }
     memory { task.attempt > 1 ? task.previousTrace.memory * 2 : (64.GB) }
@@ -95,8 +104,11 @@ process dedup{
 }
 process get_primary{
     publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*.primary*"
+    errorStrategy { (task.exitStatus == 1 || task.exitStatus in 137..140) ? 'retry' : 'terminate' }
     cpus 4
     memory 16.GB
+    label "samtools"
+    label "get_primary"
     label "arm64_capable"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
@@ -106,7 +118,7 @@ process get_primary{
     path "*${sample}_primary_flagstat.txt", emit: primary_flagstat
     script:
     """
-    samtools view -b -F 0x900 -o Aligned.sorted.noMT.noDup.primary.bam ${bam}
+    samtools view -b -F 0x900 -q 30 -o Aligned.sorted.noMT.noDup.primary.bam ${bam}
     samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.primary.bam
     samtools idxstats Aligned.sorted.noMT.noDup.primary.bam > ${sample}_primary_samtools_idxstats.txt
     samtools flagstat Aligned.sorted.noMT.noDup.primary.bam > ${sample}_primary_flagstat.txt
@@ -121,10 +133,12 @@ process get_primary{
 }
 
 process namesort{
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    errorStrategy { (task.exitStatus == 1 || task.exitStatus in 137..140) ? 'retry' : 'terminate' }
     maxRetries 3
     cpus 8
     label "arm64_capable"
+    label "samtools"
+    label "namesort"
     memory { task.attempt > 1 ? task.previousTrace.memory * 2 : (64.GB) }
     label 'namesort'
     input:
@@ -146,9 +160,11 @@ process namesort{
 }
 
 process aligned_flagstat{
-    cpus 4
+    cpus 1
     memory 8.GB
     label "arm64_capable"
+    label "aligned_flagstat"
+    label "samtools"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
     output:
@@ -164,9 +180,11 @@ process aligned_flagstat{
 }
 
 process aligned_idxstats{
-    cpus 4
+    cpus 1
     memory 8.GB
     label "arm64_capable"
+    label "samools"
+    label "aligned_idxstats"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
     output:
@@ -182,9 +200,11 @@ process aligned_idxstats{
 }
 
 process aligned_stats{
-    cpus 4
+    cpus 1
     memory 8.GB
     label "arm64_capable"
+    label "samtools"
+    label "aligned_stats"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
     output:
@@ -204,6 +224,8 @@ process subsample{
     cpus 4
     memory 8.GB
     label "arm64_capable"
+    label "samtools"
+    label "subsample"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
     val subsample_reads
