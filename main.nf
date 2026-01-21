@@ -31,6 +31,8 @@ workflow {
             bowtie2.aligned_idxstats.collect().ifEmpty([]),
             bowtie2.aligned_stats.collect().ifEmpty([]),
             bowtie2.dup_metrics.collect().ifEmpty([]))
+        primary = bowtie2.primary_bams
+        secondary = bowtie2.filtered_bam
         
     } else{
         bam_channel = channel.fromPath(params.samplesheet)
@@ -51,23 +53,21 @@ workflow {
             def secondary_bai = file(secondary_bam.toString() + '.bai')
             [sample, secondary_bam, secondary_bai]
         }
-        
+
     }
 
     
-    /*
     genrich_condition(
-        params.condition_samplesheet,
-        bowtie2.primary_bams,
+        file(params.condition_samplesheet),
+        secondary,
         file(params.blacklist)
     )
     macs3_individual(
-        bowtie2.primary_bams,
+        primary,
         params.organism
     )
     fseq2_individual(
-        bowtie2.primary_bams,
+        primary,
         params.organism
     )
-    */
 }  
