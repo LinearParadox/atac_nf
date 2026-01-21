@@ -12,7 +12,7 @@ include { callpeak_from_logfile_condition_p } from '../modules/genrich/genrich.n
 workflow genrich_condition {
     take:
     condition_samplesheet  // Path to CSV with sample,condition columns
-    bam_channel           // Channel of [sample, bam_file] tuples
+    bam_channel           // Channel of [sample, bam_file, bam_index] tuples
     blacklist             // Blacklist file
 
     main:
@@ -28,7 +28,7 @@ workflow genrich_condition {
     // Join BAM files with their conditions
     bam_with_condition = bam_channel
         .join(condition_map)
-        .map { sample, bam, condition ->
+        .map { sample, bam, index, condition ->
             return [condition, bam]
         }
     

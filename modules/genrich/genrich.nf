@@ -1,16 +1,6 @@
-process logfile_individ{
-    input:
-    tuple val(sample), file(bam)
-    file blacklist
-    output:
-    tuple val(sample), path("pileup_logs.log"), emit:logfile
-    script:
-    """
-    Genrich -t ${bam} -E ${blacklist} -j -f pileup_logs.log
-    """
-}
-
 process logfile_condition{
+    cpus 4
+    memory 16.GB
     input:
     tuple val(condition), path(bams)
     file blacklist
@@ -23,33 +13,10 @@ process logfile_condition{
     """
 }
 
-process callpeak_from_logfile_q{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/genrich/", mode: 'copy'
-    input:
-    tuple val(sample), path(logfile)
-    each qvalue
-    output:
-    tuple val(sample), val(qvalue), path("${sample}_q${qvalue}.narrowPeak"), emit: peaks
-    script:
-    """
-    Genrich -P -f ${logfile} -o ${sample}_q${qvalue}.narrowPeak -q ${qvalue}
-    """
-}
-
-process callpeak_from_logfile_p{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/genrich/", mode: 'copy'
-    input:
-    tuple val(sample), path(logfile)
-    each pvalue
-    output:
-    tuple val(sample), val(pvalue), path("${sample}_p${pvalue}.narrowPeak"), emit: peaks
-    script:
-    """
-    Genrich -P -f ${logfile} -o ${sample}_p${pvalue}.narrowPeak -p ${pvalue}
-    """
-}
 
 process callpeak_from_logfile_condition_q{
+    cpus 2
+    memory 8.GB
     publishDir "${params.outdir}/per-condition-outs/${condition}/genrich/", mode: 'copy'
     input:
     tuple val(condition), path(logfile)
@@ -63,6 +30,8 @@ process callpeak_from_logfile_condition_q{
 }
 
 process callpeak_from_logfile_condition_p{
+    cpus 2
+    memory 8.GB
     publishDir "${params.outdir}/per-condition-outs/${condition}/genrich/", mode: 'copy'
     input:
     tuple val(condition), path(logfile)
