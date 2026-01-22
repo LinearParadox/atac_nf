@@ -14,8 +14,9 @@ include { atac_qc } from '../modules/atac_qc/atacqc.nf'
 workflow process_fastqs {
     take:
         samples
+        index_directory
     main:
-    index_file = build_index(file(params.fasta)).collect()
+    index_file = build_index(file(params.reference_fasta)).collect()
     merged_reads = merge_lanes(samples)
     fastp_results = fastP(merged_reads.reads)
     aligned = align(fastp_results.reads, params.fragment_size, params.multimap, index_file)

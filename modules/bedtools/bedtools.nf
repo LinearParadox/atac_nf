@@ -4,11 +4,15 @@ process bam2bed{
     memory 16.GB
     label 'post_align_sort'
     input:
-    tuple val(sample), file(bam)
+    tuple val(sample), file(bam), file(index)
     output:
-    tuple val(sample), path("reads.bam"), emit: bed
+    tuple val(sample), path("reads.bed"), emit: bed
     script:
     """
-    bedtools bamtobed -i ${bam} > reads.bam
+    bedtools bamtobed -i ${bam} > reads.bed
+    """
+    stub:
+    """
+    touch reads.bed
     """
 }

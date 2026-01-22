@@ -43,8 +43,8 @@ workflow genrich_condition {
     )
     
     // Call peaks using q-value thresholds (if specified)
-    if (params.qvalue) {
-        qvalues = channel.from(params.qvalue.toString().split(','))
+    if (params.qvalues) {
+        qvalues = channel.from(params.qvalues)
         callpeak_from_logfile_condition_q(
             logfile_condition.out.logfile,
             qvalues
@@ -52,8 +52,8 @@ workflow genrich_condition {
     }
     
     // Call peaks using p-value thresholds (if specified)
-    if (params.pvalue) {
-        pvalues = channel.from(params.pvalue.toString().split(','))
+    if (params.pvalues) {
+        pvalues = channel.from(params.pvalues)
         callpeak_from_logfile_condition_p(
             logfile_condition.out.logfile,
             pvalues
@@ -62,6 +62,6 @@ workflow genrich_condition {
 
     emit:
     logfiles = logfile_condition.out.logfile
-    peaks_q = params.qvalue ? callpeak_from_logfile_condition_q.out.peaks : channel.empty()
-    peaks_p = params.pvalue ? callpeak_from_logfile_condition_p.out.peaks : channel.empty()
+    peaks_q = params.qvalues ? callpeak_from_logfile_condition_q.out.peaks : channel.empty()
+    peaks_p = params.pvalues ? callpeak_from_logfile_condition_p.out.peaks : channel.empty()
 }

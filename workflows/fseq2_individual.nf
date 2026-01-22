@@ -18,19 +18,19 @@ workflow fseq2_individual {
     bam2bed(bam_channel)
     
     // Call peaks using p-value thresholds (if specified)
-    if (params.fseq2_pvalue) {
-        pvalues = channel.from(params.fseq2_pvalue.toString().split(','))
+    if (params.pvalues) {
+        pvalues = channel.from(params.pvalues)
         callpeak_p(bam2bed.out.bed, organism, pvalues)
     }
     
     // Call peaks using q-value thresholds (if specified)
-    if (params.fseq2_qvalue) {
-        qvalues = channel.from(params.fseq2_qvalue.toString().split(','))
+    if (params.qvalues) {
+        qvalues = channel.from(params.qvalues)
         callpeak_q(bam2bed.out.bed, organism, qvalues)
     }
 
     emit:
     bed_files = bam2bed.out.bed
-    narrowpeak_p = params.fseq2_pvalue ? callpeak_p.out.narrowpeak : channel.empty()
-    narrowpeak_q = params.fseq2_qvalue ? callpeak_q.out.narrowpeak : channel.empty()
+    narrowpeak_p = params.pvalues ? callpeak_p.out.narrowpeak : channel.empty()
+    narrowpeak_q = params.qvalues ? callpeak_q.out.narrowpeak : channel.empty()
 }

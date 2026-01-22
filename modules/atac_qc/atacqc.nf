@@ -102,6 +102,7 @@ process atac_qc{
     """
     stub:
     """
+    touch Rplots.pdf
     touch fragment_size_distribution.pdf
     touch TSS_enrichment_heatmap.pdf
     touch TSS_profile_plot.pdf

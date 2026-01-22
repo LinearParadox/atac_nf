@@ -9,7 +9,7 @@ include { multiqc } from './modules/multiqc/multiqc.nf'
 include { genrich_condition } from './workflows/genrich_condition.nf'
 include { macs3_individual } from './workflows/macs3_individual.nf'
 include { fseq2_individual } from './workflows/fseq2_individual.nf'
-
+include { run_consenrich } from './workflows/consenrich_workflow.nf'
 workflow {
     if ( !params.samplesheet){
         error "A samplesheet must be provided for the pipeline to run."
@@ -70,4 +70,5 @@ workflow {
         primary,
         params.organism
     )
+
 }  

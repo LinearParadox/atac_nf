@@ -20,25 +20,21 @@ workflow macs3_individual {
     }
     
     // Call peaks using p-value thresholds (if specified)
-    if (params.macs3_pvalue) {
-        pvalues = channel.from(params.macs3_pvalue.toString().split(','))
+    if (params.pvalues) {
+        pvalues = channel.from(params.pvalues)
         callpeak_p(bam_channel, organism, pvalues)
     }
     
     // Call peaks using q-value thresholds (if specified)
-    if (params.macs3_qvalue) {
-        qvalues = channel.from(params.macs3_qvalue.toString().split(','))
+    if (params.qvalues) {
+        qvalues = channel.from(params.qvalues)
         callpeak_q(bam_channel, organism, qvalues)
     }
 
     emit:
-    cutoff_bams = params.macs3_cutoff_analysis ? cutoff_analysis.out.indexed_bam : channel.empty()
-    peaks_p = params.macs3_pvalue ? callpeak_p.out.peaks : channel.empty()
-    summits_p = params.macs3_pvalue ? callpeak_p.out.summits : channel.empty()
-    bedgraph_p = params.macs3_pvalue ? callpeak_p.out.bedgraph : channel.empty()
-    narrowpeak_p = params.macs3_pvalue ? callpeak_p.out.narrowpeak : channel.empty()
-    peaks_q = params.macs3_qvalue ? callpeak_q.out.peaks : channel.empty()
-    summits_q = params.macs3_qvalue ? callpeak_q.out.summits : channel.empty()
-    bedgraph_q = params.macs3_qvalue ? callpeak_q.out.bedgraph : channel.empty()
-    narrowpeak_q = params.macs3_qvalue ? callpeak_q.out.narrowpeak : channel.empty()
+    cutoff_bams = params.macs3_cutoff_analysis ? cutoff_analysis.out.cutoff_analysis : channel.empty()
+    peaks_p = params.pvalues ? callpeak_p.out.peaks : channel.empty()
+    narrowpeak_p = params.pvalues ? callpeak_p.out.narrowpeak : channel.empty()
+    peaks_q = params.qvalues ? callpeak_q.out.peaks : channel.empty()
+    narrowpeak_q = params.qvalues ? callpeak_q.out.narrowpeak : channel.empty()
 }
