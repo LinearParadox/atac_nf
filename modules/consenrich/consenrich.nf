@@ -1,3 +1,26 @@
+process rename_bam{
+    cpus 1
+    memory 8.GB
+    label "arm64_capable"
+    label "samtools"
+    label "rename_bam"
+    // rename bam file for processes where files clash for consenrich. Probably can optimize this out later
+    input:
+    tuple val(sample), file(bam), file(indexed_bam)
+    output:
+    tuple val(sample), path("${sample}.bam"), path("${sample}.bam.bai"), emit: renamed_bam
+    script:
+    """
+    ln ${bam} ${sample}.bam
+    ln ${indexed_bam} ${sample}.bam.bai
+    """
+    stub:
+    """
+    ln ${bam} ${sample}.bam
+    ln ${indexed_bam} ${sample}.bam.bai
+    """
+}
+
 process consenrich{
     publishDir "${params.outdir}/per-condition-outs/${condition}/consenrich/", mode: 'copy', saveAs: { filename ->
         if (filename.contains("MWSE")) return "consenrich_mwse.bigWig"
@@ -20,27 +43,27 @@ process consenrich{
     script:
     def bam_list = bam_and_index_files instanceof List ? bam_and_index_files.findAll { it.name.endsWith('.bam') }.collect { it.name }.join(',\n') : bam_and_index_files.name
     """
-    cat > consenrich_config.yaml <<EOF
-    experimentName: ${condition}
-    genomeParams.name: ${organism}
-    genomeParams.excludeForNorm: ['chrX', 'chrY']
-    inputParams.bamFiles: [${bam_list}]
-    outputParams.convertToBigWig: True
-    samParams.samThreads: ${Math.max(1, task.cpus.intdiv(4))}
-    EOF
+    cat > consenrich_config.yaml <<-EOF
+	experimentName: ${condition}
+	genomeParams.name: ${organism}
+	genomeParams.excludeForNorm: ['chrX', 'chrY']
+	inputParams.bamFiles: [${bam_list}]
+	outputParams.convertToBigWig: True
+	samParams.samThreads: ${Math.max(1, task.cpus.intdiv(4))}
+	EOF
     consenrich --config consenrich_config.yaml 
     """
     stub:
     def bam_list = bam_and_index_files instanceof List ? bam_and_index_files.findAll { it.name.endsWith('.bam') }.collect { it.name }.join(',\n') : bam_and_index_files.name
     """
-    cat > consenrich_config.yaml <<EOF
-    experimentName: ${condition}
-    genomeParams.name: ${organism}
-    genomeParams.excludeForNorm: ['chrX', 'chrY']
-    inputParams.bamFiles: [${bam_list}]
-    outputParams.convertToBigWig: True
-    samParams.samThreads: ${Math.max(1, task.cpus.intdiv(4))}
-    EOF
+    cat > consenrich_config.yaml <<-EOF
+	experimentName: ${condition}
+	genomeParams.name: ${organism}
+	genomeParams.excludeForNorm: ['chrX', 'chrY']
+	inputParams.bamFiles: [${bam_list}]
+	outputParams.convertToBigWig: True
+	samParams.samThreads: ${Math.max(1, task.cpus.intdiv(2))}
+	EOF
     cat consenrich_config.yaml > "${condition}_MWSE_fakkoafm.bigWig"
     cat consenrich_config.yaml > "${condition}_uncertainty_jfakmf.bigWig"
     cat consenrich_config.yaml > "${condition}_state_jfsm.bigWig"
