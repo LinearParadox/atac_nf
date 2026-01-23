@@ -62,10 +62,12 @@ workflow {
         secondary,
         file(params.blacklist)
     )
+    /*
     macs3_individual(
         primary,
         params.organism
     )
+    */
     fseq2_individual(
         primary,
         params.organism
