@@ -70,5 +70,10 @@ workflow {
         primary,
         params.organism
     )
+    run_consenrich(
+        primary,
+        params.organism,
+        file(params.condition_samplesheet)
+    )
 
 }  
