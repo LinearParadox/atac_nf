@@ -62,12 +62,15 @@ workflow {
         secondary,
         file(params.blacklist)
     )
-    /*
+    
     macs3_individual(
         primary,
-        params.organism
+        params.macs3_genome_size,
+        params.macs3_p_values,
+        params.macs3_q_values,
+        params.macs3_cutoff_analysis
     )
-    */
+    
     fseq2_individual(
         primary,
         params.organism

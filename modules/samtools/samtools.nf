@@ -254,3 +254,23 @@ process subsample{
     touch ${sample}.subsampled.bam.bai
     """
 }
+
+process mean_read_length{
+    cpus 1
+    memory 8.GB
+    label "arm64_capable"
+    label "samtools"
+    label "mean_read_length"
+    input:
+    tuple val(sample), file(bam), file(indexed_bam)
+    output:
+    tuple val(sample), env(MEAN_LENGTH), emit: mean_length
+    script:
+    """
+    MEAN_LENGTH=\$(samtools stats ${bam} | grep "^SN" | grep "average length:" | cut -f3 | cut -d. -f1)
+    """
+    stub:
+    """
+    MEAN_LENGTH=150
+    """
+}
