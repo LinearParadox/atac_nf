@@ -5,7 +5,7 @@ process frag_length{
     tuple val(sample), file(bam), file(index)
     val macs3_gsize
     output:
-    tuple val(sample), val(frag_length) , emit: frag_length
+    tuple val(sample), env(frag_length) , emit: frag_length
     script:
     """
     frag_length=\$(macs3 predictd -i ${bam} -f BAMPE -g ${macs3_gsize} 2>&1 | grep -oP 'fragment length is \\K\\d+|insertion length of all pairs is \\K\\d+' | head -n 1)
@@ -13,7 +13,7 @@ process frag_length{
     """
     stub:
     """
-    echo 'frag_length=\$(macs3 predictd -i ${bam} -f BAMPE -g ${macs3_gsize} 2>&1 | grep -oP 'fragment length is \\K\\d+|insertion length of all pairs is \\K\\d+' | head -n 1)'
+    frag_length=200
     """
     
 }
@@ -70,7 +70,7 @@ process bdgcmp_q{
 }
 
 process cutoff_analysis{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/cutoff_analysis/", mode: 'copy', pattern: "*cutoff_analysis*.txt"
+    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/cutoff_analysis/", mode: 'copy', pattern: "cutoff_analysis_*.txt"
     label "macs3"
     label "cutoff_analysis"
     input:
@@ -78,7 +78,7 @@ process cutoff_analysis{
     val genome_size
     val cutoff_analysis_suffix
     output:
-    path "${sample}_cutoff_analysis.txt", emit: cutoff_analysis
+    path "cutoff_analysis_${cutoff_analysis_suffix}.txt", emit: cutoff_analysis
     script:
     """
     macs3 bdgpeakcall -f BEDPE \
@@ -99,38 +99,41 @@ process cutoff_analysis{
         -d ${frag_length} \n\
         -l TEST \n\
         --cutoff-analysis \n\
-        -o cutoff_analysis_${cutoff_analysis_suffix}.txt' > ${sample}_cutoff_analysis.txt
+        -o cutoff_analysis_${cutoff_analysis_suffix}.txt' > cutoff_analysis_${cutoff_analysis_suffix}.txt
     """
 }
 
-process call_peak{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/${stat_name}/", mode: 'copy', pattern: "*.narrowPeak"
+process call_peak {
+    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/${stat_name}${stat}/", mode: 'copy', pattern: "*.narrowPeak"
     label "macs3"
     label "call_peak"
     input:
-    tuple val(sample), file(bedgraph), val(frag_length), val(read_length)
+    tuple val(sample), file(bedgraph), val(frag_length), val(read_length), file(bam)
     val genome_size
-    each tuple val(stat_name), val(stat)
+    each stat
+    val stat_name
     output:
-    tuple val(sample), path("${stat_name}.narrowPeak"), path("${stat_name}_summits.narrowPeak") emit: peaks
+    tuple val(sample), path("${stat_name}${stat}.narrowPeak"), path("${stat_name}${stat}_summits.narrowPeak"), emit: peaks
     script:
+    log_10_stat=-Math.log10(stat)
     """
     macs3 bdgpeakcall \
         -i ${bedgraph} \
-        -c ${stat} \
+        -c ${log_10_stat} \
         -l ${frag_length} \
         -g ${genome_size} \
-        -o ${stat_name}.narrowPeak
-    macs3 refinepeak -b ${stat_name}.narrowPeak -i ${bam}  -f BAM -o ${stat_name}_summits.narrowPeak
+        -o ${stat_name}${stat}.narrowPeak
+    macs3 refinepeak -b ${stat_name}${stat}.narrowPeak -i ${bam}  -f BAM -o ${stat_name}${stat}_summits.narrowPeak
     """
     stub:
+    log_10_stat=-Math.log10(stat)
     """
     echo 'macs3 bdgpeakcall \n\
         -i ${bedgraph} \n\
-        -c ${stat} \n\
+        -c ${log_10_stat} \n\
         -l ${frag_length} \n\
         -g ${genome_size} \n\
-        -o ${stat_name}.narrowPeak' > ${stat_name}.narrowPeak
-    echo 'macs3 refinepeak -b ${stat_name}.narrowPeak -i ${bam}  -f BAM -o ${stat_name}_summits.narrowPeak' > ${stat_name}_summits.narrowPeak
+        -o ${stat_name}${stat}.narrowPeak' > ${stat_name}${stat}.narrowPeak
+    echo 'macs3 refinepeak -b ${stat_name}${stat}.narrowPeak -i ${bam}  -f BAM -o ${stat_name}${stat}_summits.narrowPeak' > ${stat_name}${stat}_summits.narrowPeak
     """
 }
