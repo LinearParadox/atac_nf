@@ -274,3 +274,23 @@ process mean_read_length{
     MEAN_LENGTH=150
     """
 }
+
+process flagstat{
+    cpus 1
+    memory 8.GB
+    label "arm64_capable"
+    label "samtools"
+    label "flagstat"
+    input:
+    tuple val(sample), file(bam), file(indexed_bam)
+    output:
+    tuple val(sample), path("${sample}_flagstat.txt"), emit: flagstat
+    script:
+    """
+    samtools flagstat ${bam} > ${sample}_flagstat.txt
+    """
+    stub:
+    """
+    touch ${sample}_flagstat.txt
+    """
+}

@@ -73,7 +73,9 @@ workflow {
     
     fseq2_individual(
         primary,
-        params.organism
+        params.organism,
+        params.p_values,
+        params.q_values
     )
     run_consenrich(
         primary,
