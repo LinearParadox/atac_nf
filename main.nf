@@ -77,8 +77,12 @@ workflow {
     )
     run_consenrich(
         primary,
-        params.organism,
-        file(params.condition_samplesheet)
+        params.rocco_organism,
+        file(params.condition_samplesheet),
+        params.rocco_params ? file(params.rocco_params) : [],
+        params.rocco_egs,
+        params.rocco_chrom_sizes ? file(params.rocco_chrom_sizes) : [],
+        params.rocco_args
     )
 
 }  

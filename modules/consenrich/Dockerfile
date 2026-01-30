@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libdeflate-dev \
     python3 \
     pipx \
+    bedtools \
     python3-dev && \
     rm -rf /var/lib/apt/lists/*
 

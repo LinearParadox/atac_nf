@@ -22,7 +22,7 @@ process rename_bam{
 }
 
 process consenrich{
-    publishDir "${params.outdir}/per-condition-outs/${condition}/consenrich/", mode: 'copy', saveAs: { filename ->
+    publishDir "${params.outdir}/per-condition-outs/${condition}/tracks/", mode: 'copy', saveAs: { filename ->
         if (filename.contains("MWSE")) return "consenrich_mwse.bigWig"
         else if (filename.contains("uncertainty")) return "consenrich_uncertainty.bigWig"
         else if (filename.contains("state")) return "consenrich_signal.bigWig"
@@ -33,13 +33,12 @@ process consenrich{
     tag "ConsenRich"
     label "arm64_capable"
     input:
-    path bam_and_index_files
+    tuple val(condition), path(bam_and_index_files)
     val organism
-    val condition
     output:
-    path "*MWSE*.bigWig", emit: mwse_bigwig
-    path "*uncertainty*.bigWig", emit: uncertainty_bigwig
-    path "*state*.bigWig", emit: state_bigwig
+    tuple val(condition), path('*MWSE*.bigWig'), emit: mwse_bigwig
+    tuple val(condition), path('*uncertainty*.bigWig'), emit: uncertainty_bigwig
+    tuple val(condition), path('*state*.bigWig'), emit: state_bigwig
     script:
     def bam_list = bam_and_index_files instanceof List ? bam_and_index_files.findAll { it.name.endsWith('.bam') }.collect { it.name }.join(',\n') : bam_and_index_files.name
     """
@@ -67,5 +66,36 @@ process consenrich{
     cat consenrich_config.yaml > "${condition}_MWSE_fakkoafm.bigWig"
     cat consenrich_config.yaml > "${condition}_uncertainty_jfakmf.bigWig"
     cat consenrich_config.yaml > "${condition}_state_jfsm.bigWig"
+    """
+}
+
+process rocco {
+    publishDir "${params.outdir}/per-condition-outs/${condition}/peaks/rocco/", mode: 'copy', pattern: '*.narrowPeak'
+    cpus 8
+    memory 64.GB
+    tag "Rocco"
+    label "arm64_capable"
+    input:
+    tuple val(condition), path(bigWig)
+    val organism
+    path rocco_params, stageAs: 'rocco_params_file'
+    val rocco_egs
+    path chrom_sizes, stageAs: 'chrom_sizes_file'
+    val rocco_args
+    output:
+    tuple val(condition), path('*.narrowPeak'), emit: rocco_narrowPeak
+    script:
+    def organism_args = organism ? "-g ${organism}" : "-s ${chrom_sizes} --effective_genome_size ${rocco_egs}"
+    def params_arg = (!organism && rocco_params) ? "--params ${rocco_params}" : ""
+    def extra_args = rocco_args ?: ""
+    """
+    rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.narrowPeak ${organism_args} ${params_arg} ${extra_args}
+    """
+    stub:
+    def organism_args = organism ? "-g ${organism}" : "-s ${chrom_sizes} --effective_genome_size ${rocco_egs}"
+    def params_arg = (!organism && rocco_params) ? "--params ${rocco_params}" : ""
+    def extra_args = rocco_args ?: ""
+    """
+    echo "rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.narrowPeak ${organism_args} ${params_arg} ${extra_args}" > consenrichRocco_peaks.narrowPeak
     """
 }
