@@ -14,4 +14,4 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 ENV PIPX_HOME=/opt/pipx
 ENV PIPX_BIN_DIR=/usr/local/bin
-RUN pipx install git+https://github.com/LinearParadox/F-Seq2.git
+RUN pipx install git+https://github.com/LinearParadox/F-Seq2.git@sigfile_calling
