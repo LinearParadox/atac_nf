@@ -46,15 +46,15 @@ workflow macs3_individual {
         cutoff_data_p = bdgcmp_p.out.bdgcmp
             .join(frag_length.out.frag_length)
             .join(mean_read_length.out.mean_length)
-        
-        cutoff_analysis_p(cutoff_data_p, genome_size, 'p')
-        
+
+        cutoff_analysis_p(cutoff_data_p, 'p')
+
         // Combine data for q-value analysis
         cutoff_data_q = bdgcmp_q.out.bdgcmp
             .join(frag_length.out.frag_length)
             .join(mean_read_length.out.mean_length)
-        
-        cutoff_analysis_q(cutoff_data_q, genome_size, 'q')
+
+        cutoff_analysis_q(cutoff_data_q, 'q')
     }
 
     // Call peaks with p-value thresholds if provided
@@ -64,8 +64,7 @@ workflow macs3_individual {
         call_data_p = bdgcmp_p.out.bdgcmp
             .join(frag_length.out.frag_length)
             .join(mean_read_length.out.mean_length)
-            .join(bam_channel.map { it[0..1] })  // bam file for summit calling
-        call_peak_p(call_data_p, genome_size, p_stats, 'p_')
+        call_peak_p(call_data_p, p_stats, 'p_')
         peaks_p = call_peak_p.out.peaks
     } else {
         peaks_p = Channel.empty()
@@ -80,9 +79,8 @@ workflow macs3_individual {
         call_data_q = bdgcmp_q.out.bdgcmp
             .join(frag_length.out.frag_length)
             .join(mean_read_length.out.mean_length)
-            .join(bam_channel.map { it[0..1] })  // bam file for summit calling
 
-        call_peak_q(call_data_q, genome_size, q_stats, 'q_')
+        call_peak_q(call_data_q, q_stats, 'q_')
         peaks_q = call_peak_q.out.peaks
     } else {
         peaks_q = Channel.empty()

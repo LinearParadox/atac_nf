@@ -28,7 +28,7 @@ process gen_tracks{
     tuple val(sample), path("${sample}_treat_pileup.bdg"), path("${sample}_control_lambda.bdg"), emit: tracks
     script:
     """
-    macs3 callpeak -t ${bam} -f BAMPE -g ${macs3_gsize} --nomodel --extsize 200 --bdg --outdir . -n ${sample} -B
+    macs3 callpeak -t ${bam} -f BAMPE -g ${macs3_gsize} -B --outdir . -n ${sample}
     """
     stub:
     """
@@ -75,55 +75,53 @@ process cutoff_analysis{
     label "cutoff_analysis"
     input:
     tuple val(sample), file(bedgraph), val(frag_length), val(read_length)
-    val genome_size
     val cutoff_analysis_suffix
     output:
     path "cutoff_analysis_${cutoff_analysis_suffix}.txt", emit: cutoff_analysis
     script:
+    // -g is maxgap (default: tag size), -l is minlen (default: fragment length)
     """
-    macs3 bdgpeakcall -f BEDPE \
-        -t ${bedgraph} \
-        -f BEDPE \
-        -g ${genome_size}  \
-        -d ${frag_length} \
-        -l ${read_length} \
+    macs3 bdgpeakcall \
+        -i ${bedgraph} \
+        -g ${read_length} \
+        -l ${frag_length} \
         --cutoff-analysis \
         -o cutoff_analysis_${cutoff_analysis_suffix}.txt
     """
     stub:
     """
-    echo 'macs3 bdgpeakcall -f BEDPE \n\
-        -t ${bedgraph} \n\
-        -f BEDPE \n\
-        -g ${genome_size}  \n\
-        -d ${frag_length} \n\
-        -l TEST \n\
+    echo 'macs3 bdgpeakcall \n\
+        -i ${bedgraph} \n\
+        -g ${read_length} \n\
+        -l ${frag_length} \n\
         --cutoff-analysis \n\
         -o cutoff_analysis_${cutoff_analysis_suffix}.txt' > cutoff_analysis_${cutoff_analysis_suffix}.txt
     """
 }
 
 process call_peak {
-    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/${stat_name}${stat}/", mode: 'copy', pattern: "*.narrowPeak"
+    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/${stat_name}${stat}/", mode: 'copy', pattern: "*.{narrowPeak,bed}"
     label "macs3"
     label "call_peak"
     input:
-    tuple val(sample), file(bedgraph), val(frag_length), val(read_length), file(bam)
-    val genome_size
+    tuple val(sample), file(bedgraph), val(frag_length), val(read_length)
     each stat
     val stat_name
     output:
-    tuple val(sample), path("${stat_name}${stat}.narrowPeak"), path("${stat_name}${stat}_summits.narrowPeak"), emit: peaks
+    tuple val(sample), path("${stat_name}${stat}.narrowPeak"), path("${stat_name}${stat}_summits.bed"), emit: peaks
     script:
+    // -g is maxgap (default: tag size), -l is minlen (default: fragment length)
+    // --call-summits uses internal maxima detection instead of separate refinepeak
     log_10_stat=-Math.log10(stat)
     """
     macs3 bdgpeakcall \
         -i ${bedgraph} \
         -c ${log_10_stat} \
         -l ${frag_length} \
-        -g ${genome_size} \
+        -g ${read_length} \
+        --call-summits \
+        --outdir . \
         -o ${stat_name}${stat}.narrowPeak
-    macs3 refinepeak -b ${stat_name}${stat}.narrowPeak -i ${bam}  -f BAM -o ${stat_name}${stat}_summits.narrowPeak
     """
     stub:
     log_10_stat=-Math.log10(stat)
@@ -132,8 +130,10 @@ process call_peak {
         -i ${bedgraph} \n\
         -c ${log_10_stat} \n\
         -l ${frag_length} \n\
-        -g ${genome_size} \n\
+        -g ${read_length} \n\
+        --call-summits \n\
+        --outdir . \n\
         -o ${stat_name}${stat}.narrowPeak' > ${stat_name}${stat}.narrowPeak
-    echo 'macs3 refinepeak -b ${stat_name}${stat}.narrowPeak -i ${bam}  -f BAM -o ${stat_name}${stat}_summits.narrowPeak' > ${stat_name}${stat}_summits.narrowPeak
+    touch ${stat_name}${stat}_summits.bed
     """
 }
