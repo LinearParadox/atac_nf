@@ -76,7 +76,7 @@ process rocco {
     tag "Rocco"
     label "arm64_capable"
     input:
-    tuple val(condition), path(bigWig)
+    tuple val(condition), path(bigWig), path(bams)
     val organism
     path rocco_params, stageAs: 'rocco_params_file'
     val rocco_egs
@@ -89,13 +89,14 @@ process rocco {
     def params_arg = (!organism && rocco_params) ? "--params ${rocco_params}" : ""
     def extra_args = rocco_args ?: ""
     """
-    rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.narrowPeak ${organism_args} ${params_arg} ${extra_args}
+    ls -1d "\$PWD"/*.bam > bam_list.txt
+    rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.narrowPeak ${organism_args} ${params_arg} ${extra_args} --bam_list bam_list.txt
     """
     stub:
     def organism_args = organism ? "-g ${organism}" : "-s ${chrom_sizes} --effective_genome_size ${rocco_egs}"
     def params_arg = (!organism && rocco_params) ? "--params ${rocco_params}" : ""
     def extra_args = rocco_args ?: ""
     """
-    echo "rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.narrowPeak ${organism_args} ${params_arg} ${extra_args}" > consenrichRocco_peaks.narrowPeak
+    echo "rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.narrowPeak --bam_list bam_list.txt ${organism_args} ${params_arg} ${extra_args}" 
     """
 }
