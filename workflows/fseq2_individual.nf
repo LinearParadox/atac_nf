@@ -4,9 +4,9 @@
  * Workflow for running FSeq2 peak calling on individual samples
  */
 
-include { bam2bed } from '../modules/bedtools/bedtools.nf'
 include { frip as frip_p } from '../modules/bedtools/bedtools.nf'
 include { frip as frip_q } from '../modules/bedtools/bedtools.nf'
+include { create_sig } from '../modules/fseq2/fseq2.nf'
 include { callpeak_p } from '../modules/fseq2/fseq2.nf'
 include { callpeak_q } from '../modules/fseq2/fseq2.nf'
 include { flagstat } from '../modules/samtools/samtools.nf'
@@ -19,16 +19,14 @@ workflow fseq2_individual {
     q_values     // List of q-value thresholds
 
     main:
-    // Convert BAM to BED
-    bam2bed(bam_channel)
-
     // Get flagstat for FRiP calculation
     flagstat(bam_channel)
+    sig = create_sig(bam_channel)
 
     // Call peaks using p-value thresholds (if specified)
     if (p_values) {
         pvalues = channel.from(p_values)
-        callpeak_p(bam2bed.out.bed, organism, pvalues)
+        callpeak_p(sig, organism, pvalues)
         peaks_p = callpeak_p.out.narrowpeak
     } else {
         peaks_p = channel.empty()
@@ -37,7 +35,7 @@ workflow fseq2_individual {
     // Call peaks using q-value thresholds (if specified)
     if (q_values) {
         qvalues = channel.from(q_values)
-        callpeak_q(bam2bed.out.bed, organism, qvalues)
+        callpeak_q(sig, organism, qvalues)
         peaks_q = callpeak_q.out.narrowpeak
     } else {
         peaks_q = channel.empty()
@@ -94,7 +92,6 @@ workflow fseq2_individual {
     }
 
     emit:
-    bed_files = bam2bed.out.bed
     narrowpeak_p = peaks_p
     narrowpeak_q = peaks_q
     frip_p = frip_out_p
