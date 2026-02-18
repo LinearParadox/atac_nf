@@ -83,20 +83,22 @@ process rocco {
     path chrom_sizes, stageAs: 'chrom_sizes_file'
     val rocco_args
     output:
-    tuple val(condition), path('*.narrowPeak'), emit: rocco_narrowPeak
+    tuple val(condition), path('*.bed'), emit: rocco_narrowPeak
+    tuple val(condition), path('*.ts'), emit: rocco_counts
+
     script:
     def organism_args = organism ? "-g ${organism}" : "-s ${chrom_sizes} --effective_genome_size ${rocco_egs}"
     def params_arg = (!organism && rocco_params) ? "--params ${rocco_params}" : ""
     def extra_args = rocco_args ?: ""
     """
     ls -1d "\$PWD"/*.bam > bam_list.txt
-    rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.narrowPeak ${organism_args} ${params_arg} ${extra_args} --bam_list bam_list.txt
+    rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.bed ${organism_args} ${params_arg} ${extra_args} --bam_list bam_list.txt --ignore_for_norm chrX chrY
     """
     stub:
     def organism_args = organism ? "-g ${organism}" : "-s ${chrom_sizes} --effective_genome_size ${rocco_egs}"
     def params_arg = (!organism && rocco_params) ? "--params ${rocco_params}" : ""
     def extra_args = rocco_args ?: ""
     """
-    echo "rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.narrowPeak --bam_list bam_list.txt ${organism_args} ${params_arg} ${extra_args}" 
+    echo "rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.bed --bam_list bam_list.txt ${organism_args} ${params_arg} ${extra_args}" 
     """
 }
