@@ -6,6 +6,7 @@ include { index } from '../modules/samtools/samtools.nf'
 include { remove_mt } from '../modules/samtools/samtools.nf'
 include { dedup } from '../modules/samtools/samtools.nf'
 include { get_primary } from '../modules/samtools/samtools.nf'
+include { remove_unpaired } from '../modules/samtools/samtools.nf'
 include { aligned_flagstat } from '../modules/samtools/samtools.nf'
 include { aligned_idxstats } from '../modules/samtools/samtools.nf'
 include { aligned_stats } from '../modules/samtools/samtools.nf'
@@ -27,7 +28,7 @@ workflow process_fastqs {
     
     dedup_results = dedup(indexed.indexed_bam)
     aligned_filt = remove_mt(dedup_results.filtered_bam, params.style)
-    primary_results = get_primary(aligned_filt.filtered_bam)
+    primary_results = get_primary(aligned_filt.filtered_bam) | remove_unpaired() | index()
     
     subsampled_results = subsample(primary_results.primary_bam, params.qc_subsample)
     atac_qc(subsampled_results.subsampled_bam, params.organism, params.style, params.ah_hub_id)

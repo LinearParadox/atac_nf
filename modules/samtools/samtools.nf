@@ -10,19 +10,21 @@ process index{
     label 'post_align_sort'
     input:
     tuple val(sample), file(bam)
+    val(bam_prefix)
     output:
-    tuple val(sample), path("Aligned.sorted.bam"), path("Aligned.sorted.bam.bai"), emit: indexed_bam
+    tuple val(sample), path("${bam_prefix}*"), emit: indexed_bam
     script:
     def total_mem_mb = task.memory.toMega()
     def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
+    def bam_name = "${bam_prefix}.bam"
     """
-    samtools sort -@ ${task.cpus} -m ${sort_memory}M -o Aligned.sorted.bam ${bam}
-    samtools index -@ ${task.cpus} Aligned.sorted.bam
+    samtools sort -@ ${task.cpus} -m ${sort_memory}M -o ${bam_name} ${bam}
+    samtools index -@ ${task.cpus} ${bam_name}
     """
     stub:
     """
-    touch Aligned.sorted.bam
-    touch Aligned.sorted.bam.bai
+    touch ${bam_prefix}.bam
+    touch ${bam_prefix}.bam.bai
     """
 }
 
