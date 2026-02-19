@@ -144,13 +144,12 @@ process namesort{
     input:
     tuple val(sample), file(bam)
     output:
-    tuple val(sample), path("namesorted.bam"), path("namesorted.bam.bai"), emit: indexed_bam
+    tuple val(sample), path("namesorted.bam"), emit: indexed_bam
     script:
     def total_mem_mb = task.memory.toMega()
     def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
     """
     samtools sort -@ ${task.cpus} -m ${sort_memory}M -n -o namesorted.bam ${bam}
-    samtools index -@ ${task.cpus} namesorted.bam
     """
     stub:
     """
@@ -292,5 +291,29 @@ process flagstat{
     stub:
     """
     touch ${sample}_flagstat.txt
+    """
+}
+
+process remove_unpaired{
+    publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*.paired*"
+    errorStrategy { (task.exitStatus == 1 || task.exitStatus in 137..140) ? 'retry' : 'terminate' }
+    cpus 4
+    memory 16.GB
+    label "samtools"
+    label "arm64_capable"
+    label "remove_unpaired"
+    input:
+    tuple val(sample), file(bam), file(indexed_bam)
+    output:
+    tuple val(sample), path("Aligned.sorted.noMT.noDup.primary.paired.bam"), path("Aligned.sorted.noMT.noDup.primary.paired.bam.bai"), emit: paired_bam
+    script:
+    """
+    samtools view -b -f 0x2 -o Aligned.sorted.noMT.noDup.primary.paired.bam ${bam}
+    samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.primary.paired.bam
+    """
+    stub:
+    """
+    touch Aligned.sorted.noMT.noDup.primary.paired.bam
+    touch Aligned.sorted.noMT.noDup.primary.paired.bam.bai
     """
 }

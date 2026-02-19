@@ -3,7 +3,7 @@ process create_sig{
     memory '32 GB'
     label "fseq2_create_sig"  
     input:
-    tuple val(sample), path(bam), path(bai)
+    tuple val(sample), path(bam)
     output:
     tuple val(sample), path("fseq2_result_signal_tracks"), emit: sig
     script:

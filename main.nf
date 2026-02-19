@@ -10,6 +10,10 @@ include { genrich_condition } from './workflows/genrich_condition.nf'
 include { macs3_individual } from './workflows/macs3_individual.nf'
 include { fseq2_individual } from './workflows/fseq2_individual.nf'
 include { run_consenrich } from './workflows/consenrich_workflow.nf'
+include { remove_unpaired } from './modules/samtools/samtools.nf'
+include { namesort } from './modules/samtools/samtools.nf'
+include { index } from './modules/samtools/samtools.nf'
+
 workflow {
     if ( !params.samplesheet){
         error "A samplesheet must be provided for the pipeline to run."
@@ -55,6 +59,8 @@ workflow {
         }
 
     }
+    primary_filtered = remove_unpaired(primary) | index()
+    namesorted = namesort(primary_filtered)
 
     
     genrich_condition(
@@ -66,7 +72,7 @@ workflow {
     )
     
     macs3_individual(
-        primary,
+        namesorted,
         params.macs3_genome_size,
         params.p_values,
         params.q_values,
@@ -74,13 +80,13 @@ workflow {
     )
     
     fseq2_individual(
-        primary,
+        namesorted,
         params.organism,
         params.p_values,
         params.q_values
     )
     run_consenrich(
-        primary,
+        primary_filtered,
         params.rocco_organism,
         file(params.condition_samplesheet),
         params.rocco_params ? file(params.rocco_params) : [],

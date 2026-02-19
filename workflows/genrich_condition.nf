@@ -5,6 +5,7 @@
  * Takes a samplesheet with condition column and groups samples by condition
  */
 
+include { namesort } from '../modules/samtools/samtools.nf'
 include { logfile_condition } from '../modules/genrich/genrich.nf'
 include { callpeak_from_logfile_condition_q } from '../modules/genrich/genrich.nf'
 include { callpeak_from_logfile_condition_p } from '../modules/genrich/genrich.nf'
@@ -28,9 +29,9 @@ workflow genrich_condition {
         }
     
     // Join BAM files with their conditions
-    bam_with_condition = bam_channel
+    bam_with_condition = bam_channel | namesort() 
         .join(condition_map)
-        .map { sample, bam, index, condition ->
+        .map { sample, bam, condition ->
             return [condition, bam]
         }
     
