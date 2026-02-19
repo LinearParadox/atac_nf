@@ -5,10 +5,14 @@ process create_sig{
     input:
     tuple val(sample), path(bam), path(bai)
     output:
-    tuple val(sample), path("fseq2_result_signala_tracks"), emit: sig
+    tuple val(sample), path("fseq2_result_signal_tracks"), emit: sig
     script:
     """
     fseq2 callpeaks ${bam} -f 0 -pe -sig_format memmap_np -f 0 -cpus 6 -pe_fragment_size_range auto -cpus ${task.cpus}
+    """
+    stub:
+    """
+    echo "fseq2 callpeaks ${bam} -f 0 -pe -sig_format memmap_np -f 0 -cpus 6 -pe_fragment_size_range auto -cpus ${task.cpus}" > fseq2_result_signal_tracks
     """
 }
 
