@@ -32,19 +32,40 @@ workflow run_consenrich {
             [condition, bams + bais]
         }
 
+    // Extract BAM files from grouped_by_condition for rocco
+    condition_bams = grouped_by_condition
+        .map { condition, files ->
+            def bams = files.findAll { it.name.endsWith('.bam') }
+            [condition, bams]
+        }
+
     // Create all_samples entry
     all_samples = renamed_bams
         .map { sample, bam, bai -> [bam, bai] }
         .collect()
         .map { files -> ['all_samples', files.flatten()] }
 
+    // Extract BAM files for all_samples
+    all_samples_bams = renamed_bams
+        .map { sample, bam, bai -> bam }
+        .collect()
+        .map { bams -> ['all_samples', bams] }
+
+    // Combine condition and all_samples BAM mappings
+    all_bams = condition_bams.mix(all_samples_bams)
+
     // Combine per-condition and all_samples into one channel
     consenrich_input = grouped_by_condition.mix(all_samples)
 
     // Run ConsenRich once on the combined channel
     consenrich_results = consenrich(consenrich_input, organism)
-    // Run Rocco on each condition's state bigWig
-    rocco_results = rocco(consenrich_results.state_bigwig, organism, rocco_params, rocco_egs, rocco_chrom_sizes, rocco_args)
+
+    // Join consenrich results with BAM files for rocco
+    rocco_input = consenrich_results.state_bigwig
+        .join(all_bams)
+
+    // Run Rocco on each condition's state bigWig with BAM files
+    rocco_results = rocco(rocco_input, organism, rocco_params, rocco_egs, rocco_chrom_sizes, rocco_args)
 
     emit:
         condition_state = consenrich_results.state_bigwig

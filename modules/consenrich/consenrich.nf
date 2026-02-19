@@ -71,6 +71,10 @@ process consenrich{
 
 process rocco {
     publishDir "${params.outdir}/per-condition-outs/${condition}/peaks/rocco/", mode: 'copy', pattern: '*.narrowPeak'
+    publishDir "${params.outdir}/per-condition-outs/${condition}/peaks/rocco/", mode: 'copy', pattern: '*.tsv', saveAs: { filename ->
+        if (filename.endsWith('.tsv')) return "rocco_counts.tsv"
+        else return filename
+    }
     cpus 8
     memory 64.GB
     tag "Rocco"
@@ -84,7 +88,7 @@ process rocco {
     val rocco_args
     output:
     tuple val(condition), path('*.bed'), emit: rocco_narrowPeak
-    tuple val(condition), path('*.ts'), emit: rocco_counts
+    tuple val(condition), path('*.tsv'), emit: rocco_counts
 
     script:
     def organism_args = organism ? "-g ${organism}" : "-s ${chrom_sizes} --effective_genome_size ${rocco_egs}"
@@ -99,6 +103,7 @@ process rocco {
     def params_arg = (!organism && rocco_params) ? "--params ${rocco_params}" : ""
     def extra_args = rocco_args ?: ""
     """
-    echo "rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.bed --bam_list bam_list.txt ${organism_args} ${params_arg} ${extra_args}" 
+    echo "rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.bed --bam_list bam_list.txt ${organism_args} ${params_arg} ${extra_args}"  > rocco_peaks.bed
+    echo "rocco -i ${bigWig} --narrowPeak -o consenrichRocco_peaks.bed --bam_list bam_list.txt ${organism_args} ${params_arg} ${extra_args}"  > rocco_counts.tsv
     """
 }
