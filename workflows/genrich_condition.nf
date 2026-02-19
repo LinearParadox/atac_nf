@@ -14,6 +14,8 @@ workflow genrich_condition {
     condition_samplesheet  // Path to CSV with sample,condition columns
     bam_channel           // Channel of [sample, bam_file, bam_index] tuples
     blacklist             // Blacklist file
+    p_values              // List of p-value thresholds
+    q_values              // List of q-value thresholds
 
     main:
     // Parse condition samplesheet to create sample -> condition mapping
@@ -43,8 +45,8 @@ workflow genrich_condition {
     )
     
     // Call peaks using q-value thresholds (if specified)
-    if (params.qvalues) {
-        qvalues = channel.from(params.qvalues)
+    if (q_values) {
+        qvalues = channel.from(q_values)
         callpeak_from_logfile_condition_q(
             logfile_condition.out.logfile,
             qvalues
@@ -52,8 +54,8 @@ workflow genrich_condition {
     }
     
     // Call peaks using p-value thresholds (if specified)
-    if (params.pvalues) {
-        pvalues = channel.from(params.pvalues)
+    if (p_values) {
+        pvalues = channel.from(p_values)
         callpeak_from_logfile_condition_p(
             logfile_condition.out.logfile,
             pvalues
@@ -62,6 +64,6 @@ workflow genrich_condition {
 
     emit:
     logfiles = logfile_condition.out.logfile
-    peaks_q = params.qvalues ? callpeak_from_logfile_condition_q.out.peaks : channel.empty()
-    peaks_p = params.pvalues ? callpeak_from_logfile_condition_p.out.peaks : channel.empty()
+    peaks_q = q_values ? callpeak_from_logfile_condition_q.out.peaks : channel.empty()
+    peaks_p = p_values ? callpeak_from_logfile_condition_p.out.peaks : channel.empty()
 }

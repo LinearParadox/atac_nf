@@ -60,14 +60,16 @@ workflow {
     genrich_condition(
         file(params.condition_samplesheet),
         secondary,
-        file(params.blacklist)
+        file(params.blacklist),
+        params.p_values,
+        params.q_values
     )
     
     macs3_individual(
         primary,
         params.macs3_genome_size,
-        params.macs3_p_values,
-        params.macs3_q_values,
+        params.p_values,
+        params.q_values,
         params.macs3_cutoff_analysis
     )
     
