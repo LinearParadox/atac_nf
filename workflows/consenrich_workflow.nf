@@ -12,7 +12,6 @@ workflow run_consenrich {
         rocco_args // any additional command line args for Rocco
     main:
     // Parse condition samplesheet to create sample -> condition mapping
-    renamed_bams = rename_bam(primary_bams)
     condition_map = channel.fromPath(condition_samplesheet)
         .splitCsv()
         .map { fields ->
@@ -22,7 +21,7 @@ workflow run_consenrich {
         }
     
     // Join BAM files with their conditions and group by condition
-    grouped_by_condition = renamed_bams
+    grouped_by_condition = primary_bams
         .join(condition_map)
         .map { sample, bam, bai, condition ->
             [condition, bam, bai]
@@ -40,13 +39,13 @@ workflow run_consenrich {
         }
 
     // Create all_samples entry
-    all_samples = renamed_bams
+    all_samples = primary_bams
         .map { sample, bam, bai -> [bam, bai] }
         .collect()
         .map { files -> ['all_samples', files.flatten()] }
 
     // Extract BAM files for all_samples
-    all_samples_bams = renamed_bams
+    all_samples_bams = primary_bams
         .map { sample, bam, bai -> bam }
         .collect()
         .map { bams -> ['all_samples', bams] }
