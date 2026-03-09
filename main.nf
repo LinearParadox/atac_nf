@@ -59,8 +59,11 @@ workflow {
         }
 
     }
-    primary_filtered = remove_unpaired(primary) | index()
-    namesorted = namesort(primary_filtered)
+    unpaired_prefix  = primary.map { sample, _bam, _bai -> "${sample}.primary" }
+    unpaired_results = remove_unpaired(primary, unpaired_prefix)
+    primary_filtered_bam = unpaired_results.paired_bam
+    namesort_prefix = primary_filtered_bam.map { sample, _bam, _bai -> "${sample}.primary.paired" }
+    namesorted      = namesort(primary_filtered_bam.map { s, b, _bai -> [s, b] }, namesort_prefix)
 
     
     genrich_condition(
@@ -81,12 +84,11 @@ workflow {
     
     fseq2_individual(
         namesorted,
-        params.organism,
         params.p_values,
         params.q_values
     )
     run_consenrich(
-        primary_filtered,
+        primary_filtered_bam,
         params.rocco_organism,
         file(params.condition_samplesheet),
         params.rocco_params ? file(params.rocco_params) : [],

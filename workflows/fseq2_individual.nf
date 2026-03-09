@@ -14,7 +14,6 @@ include { flagstat } from '../modules/samtools/samtools.nf'
 workflow fseq2_individual {
     take:
     bam_channel  // Channel of [sample, bam_file, bai_file] tuples
-    organism     // Organism ('human' or 'mouse')
     p_values     // List of p-value thresholds
     q_values     // List of q-value thresholds
 
@@ -26,7 +25,7 @@ workflow fseq2_individual {
     // Call peaks using p-value thresholds (if specified)
     if (p_values) {
         pvalues = channel.from(p_values)
-        callpeak_p(sig, organism, pvalues)
+        callpeak_p(sig, pvalues)
         peaks_p = callpeak_p.out.narrowpeak
     } else {
         peaks_p = channel.empty()
@@ -35,7 +34,7 @@ workflow fseq2_individual {
     // Call peaks using q-value thresholds (if specified)
     if (q_values) {
         qvalues = channel.from(q_values)
-        callpeak_q(sig, organism, qvalues)
+        callpeak_q(sig, qvalues)
         peaks_q = callpeak_q.out.narrowpeak
     } else {
         peaks_q = channel.empty()
@@ -48,17 +47,17 @@ workflow fseq2_individual {
     // Calculate FRiP using p-value peaks if frip_pvalue is in the p_values list
     if (p_values && p_values.contains(params.frip_pvalue)) {
         // Filter peaks_p to get only the peaks matching params.frip_pvalue
-        // peaks_p emits: [sample, pvalue, narrowPeak]
+        // peaks_p emits: [sample, pvalue, peaks, summits]
         frip_peaks_p = callpeak_p.out.narrowpeak
-            .filter { _sample, pvalue, _peaks ->
+            .filter { _sample, pvalue, _peaks, _summits ->
                 pvalue == params.frip_pvalue
             }
-            .map { sample, _pvalue, peaks ->
+            .map { sample, _pvalue, peaks, _summits ->
                 tuple(sample, peaks)
             }
 
         // Combine: bam_channel + frip_peaks_p + flagstat
-        // Result: [sample, bam, bai, peaks, flagstat]
+        // Result: [sample, bam, peaks, flagstat]
         frip_input_p = bam_channel
             .join(frip_peaks_p)
             .join(flagstat.out.flagstat)
@@ -73,10 +72,10 @@ workflow fseq2_individual {
     if (q_values && q_values.contains(params.frip_qvalue)) {
         // Filter peaks_q to get only the peaks matching params.frip_qvalue
         frip_peaks_q = callpeak_q.out.narrowpeak
-            .filter { _sample, qvalue, _peaks ->
+            .filter { _sample, qvalue, _peaks, _summits ->
                 qvalue == params.frip_qvalue
             }
-            .map { sample, _qvalue, peaks ->
+            .map { sample, _qvalue, peaks, _summits ->
                 tuple(sample, peaks)
             }
 

@@ -12,7 +12,7 @@ process index{
     tuple val(sample), file(bam)
     val(bam_prefix)
     output:
-    tuple val(sample), path("${bam_prefix}*"), emit: indexed_bam
+    tuple val(sample), path("${bam_prefix}.bam"), path("${bam_prefix}.bam.bai"), emit: indexed_bam
     script:
     def total_mem_mb = task.memory.toMega()
     def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
@@ -40,8 +40,9 @@ process remove_mt{
     input:
     tuple val(sample), file(bam), file(index)
     val style
+    val(bam_prefix)
     output:
-    tuple val(sample), path("Aligned.sorted.noMT.bam"), path("Aligned.sorted.noMT.bam.bai"), emit: filtered_bam
+    tuple val(sample), path("${bam_prefix}.noMT.bam"), path("${bam_prefix}.noMT.bam.bai"), emit: filtered_bam
     path "*${sample}_noMT_samtools_idxstats.txt", emit: noMT_idxstats
     path "*${sample}_noMT_flagstat.txt", emit: noMT_flagstat
     script:
@@ -54,22 +55,22 @@ process remove_mt{
     else
         CHROM="\$(samtools idxstats ${bam} | cut -f1 | grep -E -v '^([1-9]|1[0-9]|2[0-2]|X|Y)\$')"
     fi
-    samtools view -h -F 4 ${bam} | python3 ./remove_chrom.py - - \${CHROM} | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o Aligned.sorted.noMT.bam -
-    samtools index -@ ${task.cpus} Aligned.sorted.noMT.bam
-    samtools idxstats Aligned.sorted.noMT.bam > ${sample}_noMT_samtools_idxstats.txt
-    samtools flagstat Aligned.sorted.noMT.bam > ${sample}_noMT_flagstat.txt
+    samtools view -h -F 4 ${bam} | python3 ./remove_chrom.py - - \${CHROM} | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o ${bam_prefix}.noMT.bam -
+    samtools index -@ ${task.cpus} ${bam_prefix}.noMT.bam
+    samtools idxstats ${bam_prefix}.noMT.bam > ${sample}_noMT_samtools_idxstats.txt
+    samtools flagstat ${bam_prefix}.noMT.bam > ${sample}_noMT_flagstat.txt
     """
     stub:
     """
-    touch Aligned.sorted.noMT.bam
-    touch Aligned.sorted.noMT.bam.bai
+    touch ${bam_prefix}.noMT.bam
+    touch ${bam_prefix}.noMT.bam.bai
     touch ${sample}_noMT_samtools_idxstats.txt
     touch ${sample}_noMT_flagstat.txt
     """
 }
 
 process dedup{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*noMT.noDup*"
+    publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*.noDup*"
     errorStrategy { (task.exitStatus == 1 || task.exitStatus in 137..140) ? 'retry' : 'terminate' }
     maxRetries 3
     label "samtools"
@@ -80,8 +81,9 @@ process dedup{
     label "arm64_capable"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
+    val(bam_prefix)
     output:
-    tuple val(sample), path("Aligned.sorted.noMT.noDup.bam"), path("Aligned.sorted.noMT.noDup.bam.bai"), emit: filtered_bam
+    tuple val(sample), path("${bam_prefix}.noDup.bam"), path("${bam_prefix}.noDup.bam.bai"), emit: filtered_bam
     path "${sample}_duplication_stats.txt", emit: duplication_stats
     script:
     def total_mem_mb = task.memory.toMega()
@@ -94,13 +96,13 @@ process dedup{
        exit 142
     fi
     samtools sort -@ ${task.cpus} -m ${sort_memory}M -u tmp.bam | \
-    samtools markdup -@ ${task.cpus} -r -f "${sample}_duplication_stats.txt" - Aligned.sorted.noMT.noDup.bam
-    samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.bam
+    samtools markdup -@ ${task.cpus} -r -f "${sample}_duplication_stats.txt" - ${bam_prefix}.noDup.bam
+    samtools index -@ ${task.cpus} ${bam_prefix}.noDup.bam
     """
     stub:
     """
-    touch Aligned.sorted.noMT.noDup.bam
-    touch Aligned.sorted.noMT.noDup.bam.bai
+    touch ${bam_prefix}.noDup.bam
+    touch ${bam_prefix}.noDup.bam.bai
     touch ${sample}_duplication_stats.txt
     """
 }
@@ -114,21 +116,22 @@ process get_primary{
     label "arm64_capable"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
+    val(bam_prefix)
     output:
-    tuple val(sample), path("Aligned.sorted.noMT.noDup.primary.bam"), path("Aligned.sorted.noMT.noDup.primary.bam.bai"), emit: primary_bam
+    tuple val(sample), path("${bam_prefix}.primary.bam"), path("${bam_prefix}.primary.bam.bai"), emit: primary_bam
     path "*${sample}_primary_samtools_idxstats.txt", emit: primary_idxstats
     path "*${sample}_primary_flagstat.txt", emit: primary_flagstat
     script:
     """
-    samtools view -b -F 0x900 -q 30 -o Aligned.sorted.noMT.noDup.primary.bam ${bam}
-    samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.primary.bam
-    samtools idxstats Aligned.sorted.noMT.noDup.primary.bam > ${sample}_primary_samtools_idxstats.txt
-    samtools flagstat Aligned.sorted.noMT.noDup.primary.bam > ${sample}_primary_flagstat.txt
+    samtools view -b -F 0x900 -q 30 -o ${bam_prefix}.primary.bam ${bam}
+    samtools index -@ ${task.cpus} ${bam_prefix}.primary.bam
+    samtools idxstats ${bam_prefix}.primary.bam > ${sample}_primary_samtools_idxstats.txt
+    samtools flagstat ${bam_prefix}.primary.bam > ${sample}_primary_flagstat.txt
     """
     stub:
     """
-    touch Aligned.sorted.noMT.noDup.primary.bam
-    touch Aligned.sorted.noMT.noDup.primary.bam.bai
+    touch ${bam_prefix}.primary.bam
+    touch ${bam_prefix}.primary.bam.bai
     touch ${sample}_primary_samtools_idxstats.txt
     touch ${sample}_primary_flagstat.txt
     """
@@ -145,18 +148,18 @@ process namesort{
     label 'namesort'
     input:
     tuple val(sample), file(bam)
+    val(bam_prefix)
     output:
-    tuple val(sample), path("namesorted.bam"), emit: indexed_bam
+    tuple val(sample), path("${bam_prefix}.namesorted.bam"), emit: indexed_bam
     script:
     def total_mem_mb = task.memory.toMega()
     def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
     """
-    samtools sort -@ ${task.cpus} -m ${sort_memory}M -n -o namesorted.bam ${bam}
+    samtools sort -@ ${task.cpus} -m ${sort_memory}M -n -o ${bam_prefix}.namesorted.bam ${bam}
     """
     stub:
     """
-    touch namesorted.bam
-    touch namesorted.bam.bai
+    touch ${bam_prefix}.namesorted.bam
     """
 }
 
@@ -263,7 +266,7 @@ process mean_read_length{
     label "samtools"
     label "mean_read_length"
     input:
-    tuple val(sample), file(bam), file(indexed_bam)
+    tuple val(sample), file(bam)
     output:
     tuple val(sample), env(MEAN_LENGTH), emit: mean_length
     script:
@@ -283,7 +286,7 @@ process flagstat{
     label "samtools"
     label "flagstat"
     input:
-    tuple val(sample), file(bam), file(indexed_bam)
+    tuple val(sample), file(bam)
     output:
     tuple val(sample), path("${sample}_flagstat.txt"), emit: flagstat
     script:
@@ -306,16 +309,17 @@ process remove_unpaired{
     label "remove_unpaired"
     input:
     tuple val(sample), file(bam), file(indexed_bam)
+    val(bam_prefix)
     output:
-    tuple val(sample), path("Aligned.sorted.noMT.noDup.primary.paired.bam"), path("Aligned.sorted.noMT.noDup.primary.paired.bam.bai"), emit: paired_bam
+    tuple val(sample), path("${bam_prefix}.paired.bam"), path("${bam_prefix}.paired.bam.bai"), emit: paired_bam
     script:
     """
-    samtools view -b -f 0x2 -o Aligned.sorted.noMT.noDup.primary.paired.bam ${bam}
-    samtools index -@ ${task.cpus} Aligned.sorted.noMT.noDup.primary.paired.bam
+    samtools view -b -f 0x2 -o ${bam_prefix}.paired.bam ${bam}
+    samtools index -@ ${task.cpus} ${bam_prefix}.paired.bam
     """
     stub:
     """
-    touch Aligned.sorted.noMT.noDup.primary.paired.bam
-    touch Aligned.sorted.noMT.noDup.primary.paired.bam.bai
+    touch ${bam_prefix}.paired.bam
+    touch ${bam_prefix}.paired.bam.bai
     """
 }

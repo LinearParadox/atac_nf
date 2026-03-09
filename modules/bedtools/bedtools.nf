@@ -24,7 +24,7 @@ process frip{
     memory 32.GB
     label 'post_align_sort'
     input:
-    tuple val(sample), file(bam), file(index), file(peaks), file(flagstat)
+    tuple val(sample), file(bam), file(peaks), file(flagstat)
     val caller
     val stat
     output:

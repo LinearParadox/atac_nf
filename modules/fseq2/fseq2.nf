@@ -22,19 +22,19 @@ process callpeak_p{
     cpus 8
     memory '32 GB'
     publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/fseq2/p${pvalue}/", mode: 'copy', pattern: "*"
-    label "fseq2_callpeak"  
+    label "fseq2_callpeak"
     input:
     tuple val(sample), path(sig)
     each pvalue
     output:
-    tuple val(sample), val(pvalue), path("p${pvalue}*.narrowPeak"), emit: narrowpeak
+    tuple val(sample), val(pvalue), path("p${pvalue}_peaks.narrowPeak"), path("p${pvalue}_summits.narrowPeak"), emit: narrowpeak
     script:
     """
     fseq2 callpeak_sig ${sig} -name p${pvalue} -standard_narrowpeak -p ${pvalue} -cpus ${task.cpus}
     """
     stub:
     """
-    fseq2 callpeak_sig ${sig} -name p${pvalue} -standard_narrowpeak -p ${pvalue} -cpus ${task.cpus} > p${pvalue}_peaks.narrowPeak
+    echo "fseq2 callpeak_sig ${sig} -name p${pvalue} -standard_narrowpeak -p ${pvalue} -cpus ${task.cpus}" > p${pvalue}_peaks.narrowPeak
     touch p${pvalue}_summits.narrowPeak
     """
 }
@@ -46,14 +46,14 @@ process callpeak_q{
     tuple val(sample), path(sig)
     each qvalue
     output:
-    tuple val(sample), val(qvalue), path("q${qvalue}*.narrowPeak"), emit: narrowpeak
+    tuple val(sample), val(qvalue), path("q${qvalue}_peaks.narrowPeak"), path("q${qvalue}_summits.narrowPeak"), emit: narrowpeak
     script:
     """
     fseq2 callpeak_sig ${sig} -name q${qvalue} -standard_narrowpeak -q ${qvalue} -cpus ${task.cpus}
     """
     stub:
     """
-    fseq2 callpeak_sig ${sig} -name q${qvalue} -standard_narrowpeak -q ${qvalue} -cpus ${task.cpus} > q${qvalue}_peaks.narrowPeak
+    echo "fseq2 callpeak_sig ${sig} -name q${qvalue} -standard_narrowpeak -q ${qvalue} -cpus ${task.cpus}" > q${qvalue}_peaks.narrowPeak
     touch q${qvalue}_summits.narrowPeak
     """
 }

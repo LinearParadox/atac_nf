@@ -2,7 +2,7 @@ process frag_length{
     label 'macs3'
     label "predictd"
     input:
-    tuple val(sample), file(bam), file(index)
+    tuple val(sample), file(bam)
     val macs3_gsize
     output:
     tuple val(sample), env(frag_length) , emit: frag_length
@@ -15,14 +15,14 @@ process frag_length{
     """
     frag_length=200
     """
-    
+
 }
 process gen_tracks{
     publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/", mode: 'copy', pattern: "*.narrowPeak", saveAs: { filename -> filename.endsWith(".narrowPeak") ? "default_macs3.narrowPeak" : filename }
     label "macs3"
     label "callpeak"
     input:
-    tuple val(sample), file(bam), file(index)
+    tuple val(sample), file(bam)
     val macs3_gsize
     output:
     tuple val(sample), path("${sample}_treat_pileup.bdg"), path("${sample}_control_lambda.bdg"), emit: tracks

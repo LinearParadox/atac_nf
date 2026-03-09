@@ -29,7 +29,11 @@ workflow genrich_condition {
         }
     
     // Join BAM files with their conditions
-    bam_with_condition = bam_channel | namesort() 
+    namesort_input  = bam_channel.map { sample, bam, _bai -> [sample, bam] }
+    namesort_prefix = namesort_input.map { sample, _bam -> "${sample}" }
+    namesorted_bams = namesort(namesort_input, namesort_prefix)
+
+    bam_with_condition = namesorted_bams.indexed_bam
         .join(condition_map)
         .map { sample, bam, condition ->
             return [condition, bam]
