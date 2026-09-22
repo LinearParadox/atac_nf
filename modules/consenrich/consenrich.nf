@@ -70,8 +70,8 @@ process consenrich{
 }
 
 process rocco {
-    publishDir "${params.outdir}/per-condition-outs/${condition}/peaks/rocco/", mode: 'copy', pattern: '*.narrowPeak'
-    publishDir "${params.outdir}/per-condition-outs/${condition}/peaks/rocco/", mode: 'copy', pattern: '*.tsv', saveAs: { filename ->
+    publishDir { "${params.outdir}/per-condition-outs/${condition}/peaks/rocco/" }, mode: 'copy', pattern: '*.bed'
+    publishDir { "${params.outdir}/per-condition-outs/${condition}/peaks/rocco/" }, mode: 'copy', pattern: '*.tsv', saveAs: { filename ->
         if (filename.endsWith('.tsv')) return "rocco_counts.tsv"
         else return filename
     }

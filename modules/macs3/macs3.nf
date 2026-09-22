@@ -27,6 +27,7 @@ process gen_tracks{
     val macs3_gsize
     output:
     tuple val(sample), path("${sample}_treat_pileup.bdg"), path("${sample}_control_lambda.bdg"), emit: tracks
+    tuple val(sample), path("${sample}_peaks.narrowPeak"), emit: peaks
     script:
     """
     macs3 callpeak -t ${bam} -f BAMPE -g ${macs3_gsize} -B --outdir . -n ${sample}
@@ -35,6 +36,7 @@ process gen_tracks{
     """
     touch ${sample}_treat_pileup.bdg
     touch ${sample}_control_lambda.bdg
+    touch ${sample}_peaks.narrowPeak
     """
 }
 process bdgcmp_p{
@@ -101,7 +103,7 @@ process cutoff_analysis{
 }
 
 process call_peak {
-    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/${stat_name}${stat}/", mode: 'copy', pattern: "*.{narrowPeak,bed}"
+    publishDir { "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/${stat_name}${stat}/" }, mode: 'copy', pattern: "*.narrowPeak"
     label "macs3"
     label "call_peak"
     input:
@@ -109,11 +111,12 @@ process call_peak {
     each stat
     val stat_name
     output:
-    tuple val(sample), path("${stat_name}${stat}.narrowPeak"), path("${stat_name}${stat}_summits.bed"), emit: peaks
+    tuple val(sample), val(stat), path("${stat_name}${stat}.narrowPeak"), emit: peaks
     script:
     // -g is maxgap (default: tag size), -l is minlen (default: fragment length)
-    // --call-summits uses internal maxima detection instead of separate refinepeak
-    log_10_stat=-Math.log10(stat)
+    // --call-summits uses internal maxima detection instead of separate refinepeak; summits are written to
+    // column 10 of the narrowPeak (bdgpeakcall writes no separate summits file)
+    def log_10_stat = -Math.log10(stat as double)
     """
     macs3 bdgpeakcall \
         -i ${bedgraph} \
@@ -125,7 +128,7 @@ process call_peak {
         -o ${stat_name}${stat}.narrowPeak
     """
     stub:
-    log_10_stat=-Math.log10(stat)
+    def log_10_stat = -Math.log10(stat as double)
     """
     echo 'macs3 bdgpeakcall \n\
         -i ${bedgraph} \n\
@@ -135,6 +138,5 @@ process call_peak {
         --call-summits \n\
         --outdir . \n\
         -o ${stat_name}${stat}.narrowPeak' > ${stat_name}${stat}.narrowPeak
-    touch ${stat_name}${stat}_summits.bed
     """
 }

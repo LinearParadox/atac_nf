@@ -93,16 +93,17 @@ workflow macs3_individual {
     // Calculate FRiP using p-value peaks if frip_pvalue is in the p_values list
     if (p_values && p_values.contains(params.frip_pvalue)) {
         // Filter peaks_p to get only the peaks matching params.frip_pvalue
+        // peaks_p emits: [sample, pvalue, peaks]
         frip_peaks_p = call_peak_p.out.peaks
-            .filter { sample, peaks, summits ->
-                peaks.name == "p_${params.frip_pvalue}.narrowPeak"
+            .filter { _sample, pvalue, _peaks ->
+                pvalue == params.frip_pvalue
             }
-            .map { sample, peaks, summits ->
+            .map { sample, _pvalue, peaks ->
                 tuple(sample, peaks)
             }
 
         // Combine: bam_channel + frip_peaks_p + flagstat
-        // Result: [sample, bam, bai, peaks, flagstat]
+        // Result: [sample, bam, peaks, flagstat]
         frip_input_p = bam_channel
             .join(frip_peaks_p)
             .join(flagstat.out.flagstat)
@@ -117,10 +118,10 @@ workflow macs3_individual {
     if (q_values && q_values.contains(params.frip_qvalue)) {
         // Filter peaks_q to get only the peaks matching params.frip_qvalue
         frip_peaks_q = call_peak_q.out.peaks
-            .filter { sample, peaks, summits ->
-                peaks.name == "q_${params.frip_qvalue}.narrowPeak"
+            .filter { _sample, qvalue, _peaks ->
+                qvalue == params.frip_qvalue
             }
-            .map { sample, peaks, summits ->
+            .map { sample, _qvalue, peaks ->
                 tuple(sample, peaks)
             }
 
@@ -136,6 +137,7 @@ workflow macs3_individual {
     }
 
     emit:
+    default_peaks = gen_tracks.out.peaks
     cutoff_p = cutoff_analysis ? cutoff_analysis_p.out.cutoff_analysis : channel.empty()
     cutoff_q = cutoff_analysis ? cutoff_analysis_q.out.cutoff_analysis : channel.empty()
     peaks_p = peaks_p
