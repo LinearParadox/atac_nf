@@ -1,5 +1,5 @@
 process atac_qc{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/qc/", mode: 'copy', pattern: "*.pdf"
+    publishDir { "${params.outdir}/per-sample-outs/${sample}/qc/" }, mode: 'copy', pattern: "*.pdf"
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 3
     cpus 8

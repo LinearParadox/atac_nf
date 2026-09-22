@@ -5,7 +5,7 @@ process frag_length{
     tuple val(sample), file(bam)
     val macs3_gsize
     output:
-    tuple val(sample), env(frag_length) , emit: frag_length
+    tuple val(sample), env("frag_length") , emit: frag_length
     script:
     """
     macs3 predictd -i ${bam} -f BAMPE -g ${macs3_gsize} > predictd.log 2>&1
@@ -19,7 +19,7 @@ process frag_length{
 
 }
 process gen_tracks{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/", mode: 'copy', pattern: "*.narrowPeak", saveAs: { filename -> filename.endsWith(".narrowPeak") ? "default_macs3.narrowPeak" : filename }
+    publishDir { "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/" }, mode: 'copy', pattern: "*.narrowPeak", saveAs: { filename -> filename.endsWith(".narrowPeak") ? "default_macs3.narrowPeak" : filename }
     label "macs3"
     label "callpeak"
     input:
@@ -73,7 +73,7 @@ process bdgcmp_q{
 }
 
 process cutoff_analysis{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/cutoff_analysis/", mode: 'copy', pattern: "cutoff_analysis_*.txt"
+    publishDir { "${params.outdir}/per-sample-outs/${sample}/peaks/macs3/cutoff_analysis/" }, mode: 'copy', pattern: "cutoff_analysis_*.txt"
     label "macs3"
     label "cutoff_analysis"
     input:

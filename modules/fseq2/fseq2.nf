@@ -21,7 +21,7 @@ process create_sig{
 process callpeak_p{
     cpus 8
     memory '32 GB'
-    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/fseq2/p${pvalue}/", mode: 'copy', pattern: "*"
+    publishDir { "${params.outdir}/per-sample-outs/${sample}/peaks/fseq2/p${pvalue}/" }, mode: 'copy', pattern: "*"
     label "fseq2_callpeak"
     input:
     tuple val(sample), path(sig)

@@ -70,7 +70,7 @@ process remove_mt{
 }
 
 process dedup{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*.noDup*"
+    publishDir { "${params.outdir}/per-sample-outs/${sample}/" }, mode: 'copy', pattern: "*.noDup*"
     errorStrategy { (task.exitStatus == 1 || task.exitStatus in 137..140) ? 'retry' : 'terminate' }
     maxRetries 3
     label "samtools"
@@ -107,7 +107,7 @@ process dedup{
     """
 }
 process get_primary{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*.primary*"
+    publishDir { "${params.outdir}/per-sample-outs/${sample}/" }, mode: 'copy', pattern: "*.primary*"
     errorStrategy { (task.exitStatus == 1 || task.exitStatus in 137..140) ? 'retry' : 'terminate' }
     cpus 4
     memory 16.GB
@@ -268,7 +268,7 @@ process mean_read_length{
     input:
     tuple val(sample), file(bam)
     output:
-    tuple val(sample), env(MEAN_LENGTH), emit: mean_length
+    tuple val(sample), env("MEAN_LENGTH"), emit: mean_length
     script:
     """
     MEAN_LENGTH=\$(samtools stats ${bam} | grep "^SN" | grep "average length:" | cut -f3 | cut -d. -f1)
@@ -300,7 +300,7 @@ process flagstat{
 }
 
 process remove_unpaired{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/", mode: 'copy', pattern: "*.paired*"
+    publishDir { "${params.outdir}/per-sample-outs/${sample}/" }, mode: 'copy', pattern: "*.paired*"
     errorStrategy { (task.exitStatus == 1 || task.exitStatus in 137..140) ? 'retry' : 'terminate' }
     cpus 4
     memory 16.GB

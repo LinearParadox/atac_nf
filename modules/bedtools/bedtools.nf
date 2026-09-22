@@ -18,7 +18,7 @@ process bam2bed{
 }
 
 process frip{
-    publishDir "${params.outdir}/per-sample-outs/${sample}/qc/${caller}", mode: 'copy'
+    publishDir { "${params.outdir}/per-sample-outs/${sample}/qc/${caller}" }, mode: 'copy'
     cpus 2
     label "arm64_capable"
     memory 32.GB

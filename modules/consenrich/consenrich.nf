@@ -22,7 +22,7 @@ process rename_bam{
 }
 
 process consenrich{
-    publishDir "${params.outdir}/per-condition-outs/${condition}/tracks/", mode: 'copy', saveAs: { filename ->
+    publishDir { "${params.outdir}/per-condition-outs/${condition}/tracks/" }, mode: 'copy', saveAs: { filename ->
         if (filename.contains("MWSE")) return "consenrich_mwse.bigWig"
         else if (filename.contains("uncertainty")) return "consenrich_uncertainty.bigWig"
         else if (filename.contains("state")) return "consenrich_signal.bigWig"

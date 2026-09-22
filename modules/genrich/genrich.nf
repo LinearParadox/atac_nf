@@ -22,7 +22,7 @@ process logfile_condition{
 process callpeak_from_logfile_condition_q{
     cpus 2
     memory 8.GB
-    publishDir "${params.outdir}/per-condition-outs/${condition}/peaks/genrich/", mode: 'copy'
+    publishDir { "${params.outdir}/per-condition-outs/${condition}/peaks/genrich/" }, mode: 'copy'
     input:
     tuple val(condition), path(logfile)
     each qvalue
@@ -42,7 +42,7 @@ process callpeak_from_logfile_condition_q{
 process callpeak_from_logfile_condition_p{
     cpus 2
     memory 8.GB
-    publishDir "${params.outdir}/per-condition-outs/${condition}/peaks/genrich/", mode: 'copy'
+    publishDir { "${params.outdir}/per-condition-outs/${condition}/peaks/genrich/" }, mode: 'copy'
     input:
     tuple val(condition), path(logfile)
     each pvalue
