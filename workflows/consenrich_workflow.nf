@@ -22,7 +22,7 @@ workflow run_consenrich {
     // Join BAM files with their conditions and group by condition
     grouped_by_condition = primary_bams
         .join(condition_map)
-        .map { sample, bam, bai, condition ->
+        .map { _sample, bam, bai, condition ->
             [condition, bam, bai]
         }
         .groupTuple()
@@ -33,19 +33,19 @@ workflow run_consenrich {
     // Extract BAM files from grouped_by_condition for rocco
     condition_bams = grouped_by_condition
         .map { condition, files ->
-            def bams = files.findAll { it.name.endsWith('.bam') }
+            def bams = files.findAll { f -> f.name.endsWith('.bam') }
             [condition, bams]
         }
 
     // Create all_samples entry
     all_samples = primary_bams
-        .map { sample, bam, bai -> [bam, bai] }
+        .map { _sample, bam, bai -> [bam, bai] }
         .collect()
         .map { files -> ['all_samples', files.flatten()] }
 
     // Extract BAM files for all_samples
     all_samples_bams = primary_bams
-        .map { sample, bam, bai -> bam }
+        .map { _sample, bam, _bai -> bam }
         .collect()
         .map { bams -> ['all_samples', bams] }
 

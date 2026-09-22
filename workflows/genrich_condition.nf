@@ -35,7 +35,7 @@ workflow genrich_condition {
 
     bam_with_condition = namesorted_bams.indexed_bam
         .join(condition_map)
-        .map { sample, bam, condition ->
+        .map { _sample, bam, condition ->
             return [condition, bam]
         }
     

@@ -17,7 +17,7 @@ process consenrich{
     tuple val(condition), path('*uncertainty*.bigWig'), emit: uncertainty_bigwig
     tuple val(condition), path('*state*.bigWig'), emit: state_bigwig
     script:
-    def bam_list = bam_and_index_files instanceof List ? bam_and_index_files.findAll { it.name.endsWith('.bam') }.collect { it.name }.join(',\n') : bam_and_index_files.name
+    def bam_list = bam_and_index_files instanceof List ? bam_and_index_files.findAll { f -> f.name.endsWith('.bam') }.collect { f -> f.name }.join(',\n') : bam_and_index_files.name
     """
     cat > consenrich_config.yaml <<-EOF
 	experimentName: ${condition}
@@ -30,7 +30,7 @@ process consenrich{
     consenrich --config consenrich_config.yaml 
     """
     stub:
-    def bam_list = bam_and_index_files instanceof List ? bam_and_index_files.findAll { it.name.endsWith('.bam') }.collect { it.name }.join(',\n') : bam_and_index_files.name
+    def bam_list = bam_and_index_files instanceof List ? bam_and_index_files.findAll { f -> f.name.endsWith('.bam') }.collect { f -> f.name }.join(',\n') : bam_and_index_files.name
     """
     cat > consenrich_config.yaml <<-EOF
 	experimentName: ${condition}
