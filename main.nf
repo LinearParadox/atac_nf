@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 
-/*  
+/*
  * Basic nextflow pipeline for atac seq
  */
 
@@ -54,9 +54,10 @@ workflow {
             bowtie2.aligned_idxstats.collect().ifEmpty([]),
             bowtie2.aligned_stats.collect().ifEmpty([]),
             bowtie2.dup_metrics.collect().ifEmpty([]))
-        primary = bowtie2.primary_bams
+        // process_fastqs already removes unpaired reads from the primary BAMs
+        primary_filtered_bam = bowtie2.primary_bams
         secondary = bowtie2.filtered_bam
-        
+
     } else{
         bam_channel = channel.fromPath(params.samplesheet)
             .splitCsv()
@@ -66,21 +67,20 @@ workflow {
                 def secondary_bam = file(fields[2])
                 return [sample, primary_bam, secondary_bam]
             }
-        
-        primary = bam_channel.map { sample, primary_bam, secondary_bam ->
+
+        primary = bam_channel.map { sample, primary_bam, _secondary_bam ->
             def primary_bai = file(primary_bam.toString() + '.bai')
             [sample, primary_bam, primary_bai]
         }
-        
-        secondary = bam_channel.map { sample, primary_bam, secondary_bam ->
+
+        secondary = bam_channel.map { sample, _primary_bam, secondary_bam ->
             def secondary_bai = file(secondary_bam.toString() + '.bai')
             [sample, secondary_bam, secondary_bai]
         }
 
+        unpaired_prefix  = primary.map { sample, _bam, _bai -> "${sample}.primary" }
+        primary_filtered_bam = remove_unpaired(primary, unpaired_prefix).paired_bam
     }
-    unpaired_prefix  = primary.map { sample, _bam, _bai -> "${sample}.primary" }
-    unpaired_results = remove_unpaired(primary, unpaired_prefix)
-    primary_filtered_bam = unpaired_results.paired_bam
     namesort_prefix = primary_filtered_bam.map { sample, _bam, _bai -> "${sample}.primary.paired" }
     namesorted      = namesort(primary_filtered_bam.map { s, b, _bai -> [s, b] }, namesort_prefix)
 
@@ -95,7 +95,7 @@ workflow {
         p_values,
         q_values
     )
-    
+
     macs3_individual(
         namesorted,
         flagstats,
@@ -104,7 +104,7 @@ workflow {
         q_values,
         params.macs3_cutoff_analysis
     )
-    
+
     fseq2_individual(
         namesorted,
         flagstats,
@@ -121,4 +121,4 @@ workflow {
         params.rocco_args
     )
 
-}  
+}
