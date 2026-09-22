@@ -40,7 +40,10 @@ process atac_qc{
             edb <- ah[[id]]
         }
     } else {
-        edb <- ah[[${ah_hub_id}]]
+        if ( "${ah_hub_id}" == "" ) {
+            stop("params.ah_hub_id must be set for organisms other than human and mouse")
+        }
+        edb <- ah[[ "${ah_hub_id}" ]]
     }
    if("${style}" == "ucsc"){
         options(ucscChromosomeNames=TRUE)
