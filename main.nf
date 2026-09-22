@@ -28,17 +28,19 @@ workflow {
     if ( !params.outdir ) {
         error "An output directory must be provided for the pipeline to run."
     }
-    if ( !params.condition_samplesheet ) {
-        error "A condition samplesheet (params.condition_samplesheet) must be provided for the pipeline to run."
+    // Peak calling needs condition information; without it only alignment and filtering are run
+    // CLI values arrive as strings (e.g. --peak_calling false), so normalise to a boolean
+    def peak_calling = params.peak_calling.toString().toBoolean()
+    if ( peak_calling && !params.condition_samplesheet ) {
+        log.warn "No condition samplesheet (params.condition_samplesheet) provided; setting peak_calling to false. Only alignment and filtering will be run."
+        peak_calling = false
     }
-    if ( !params.blacklist ) {
-        error "A blacklist BED file (params.blacklist) must be provided for the pipeline to run."
+    if ( peak_calling && !params.blacklist ) {
+        error "A blacklist BED file (params.blacklist) must be provided for peak calling."
     }
     if ( params.do_align && !params.bowtie_index && !params.reference_fasta ) {
         error "Alignment requires either params.bowtie_index or params.reference_fasta."
     }
-    def p_values = toThresholdList(params.p_values)
-    def q_values = toThresholdList(params.q_values)
 
     if ( params.do_align ){
         samples=channel.fromPath(params.samplesheet).splitCsv().map { fields ->
@@ -81,44 +83,49 @@ workflow {
         unpaired_prefix  = primary.map { sample, _bam, _bai -> "${sample}.primary" }
         primary_filtered_bam = remove_unpaired(primary, unpaired_prefix).paired_bam
     }
-    namesort_prefix = primary_filtered_bam.map { sample, _bam, _bai -> "${sample}.primary.paired" }
-    namesorted      = namesort(primary_filtered_bam.map { s, b, _bai -> [s, b] }, namesort_prefix)
 
-    // Flagstat is shared by the MACS3 and FSeq2 FRiP calculations
-    flagstats = flagstat(namesorted).flagstat
+    // Everything below is peak calling; skipped when peak_calling is false
+    if ( peak_calling ) {
+        def p_values = toThresholdList(params.p_values)
+        def q_values = toThresholdList(params.q_values)
 
+        namesort_prefix = primary_filtered_bam.map { sample, _bam, _bai -> "${sample}.primary.paired" }
+        namesorted      = namesort(primary_filtered_bam.map { s, b, _bai -> [s, b] }, namesort_prefix)
 
-    genrich_condition(
-        file(params.condition_samplesheet),
-        secondary,
-        file(params.blacklist),
-        p_values,
-        q_values
-    )
+        // Flagstat is shared by the MACS3 and FSeq2 FRiP calculations
+        flagstats = flagstat(namesorted).flagstat
 
-    macs3_individual(
-        namesorted,
-        flagstats,
-        params.macs3_genome_size,
-        p_values,
-        q_values,
-        params.macs3_cutoff_analysis
-    )
+        genrich_condition(
+            file(params.condition_samplesheet),
+            secondary,
+            file(params.blacklist),
+            p_values,
+            q_values
+        )
 
-    fseq2_individual(
-        namesorted,
-        flagstats,
-        p_values,
-        q_values
-    )
-    run_consenrich(
-        primary_filtered_bam,
-        params.rocco_organism,
-        file(params.condition_samplesheet),
-        params.rocco_params ? file(params.rocco_params) : [],
-        params.rocco_egs,
-        params.rocco_chrom_sizes ? file(params.rocco_chrom_sizes) : [],
-        params.rocco_args
-    )
+        macs3_individual(
+            namesorted,
+            flagstats,
+            params.macs3_genome_size,
+            p_values,
+            q_values,
+            params.macs3_cutoff_analysis
+        )
 
+        fseq2_individual(
+            namesorted,
+            flagstats,
+            p_values,
+            q_values
+        )
+        run_consenrich(
+            primary_filtered_bam,
+            params.rocco_organism,
+            file(params.condition_samplesheet),
+            params.rocco_params ? file(params.rocco_params) : [],
+            params.rocco_egs,
+            params.rocco_chrom_sizes ? file(params.rocco_chrom_sizes) : [],
+            params.rocco_args
+        )
+    }
 }
