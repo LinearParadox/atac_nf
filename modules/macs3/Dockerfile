@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     libdeflate-dev \
     python3 \
     pipx \
-    python3-dev && \
+    python3-dev \
     jq && \
     rm -rf /var/lib/apt/lists/*
 ENV PIPX_HOME=/opt/pipx
