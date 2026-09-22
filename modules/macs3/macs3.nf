@@ -8,7 +8,8 @@ process frag_length{
     tuple val(sample), env(frag_length) , emit: frag_length
     script:
     """
-    frag_length=\$(macs3 predictd -i ${bam} -f BAMPE -g ${macs3_gsize} 2>&1 | grep -oP 'fragment length is \\K\\d+|insertion length of all pairs is \\K\\d+' | head -n 1)
+    macs3 predictd -i ${bam} -f BAMPE -g ${macs3_gsize} > predictd.log 2>&1
+    frag_length=\$(grep -m 1 -oP 'fragment length is \\K\\d+|insertion length of all pairs is \\K\\d+' predictd.log)
     echo \${frag_length}
     """
     stub:

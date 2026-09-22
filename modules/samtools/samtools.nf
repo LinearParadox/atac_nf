@@ -271,7 +271,7 @@ process mean_read_length{
     tuple val(sample), env(MEAN_LENGTH), emit: mean_length
     script:
     """
-    export MEAN_LENGTH=\$(samtools stats ${bam} | grep "^SN" | grep "average length:" | cut -f3 | cut -d. -f1)
+    MEAN_LENGTH=\$(samtools stats ${bam} | grep "^SN" | grep "average length:" | cut -f3 | cut -d. -f1)
     """
     stub:
     """
