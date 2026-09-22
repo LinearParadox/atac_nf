@@ -49,13 +49,12 @@ process remove_mt{
     def total_mem_mb = task.memory.toMega()
     def sort_memory = (total_mem_mb * 0.75 / task.cpus).toInteger()
     """
-    wget -O "remove_chrom.py" https://raw.githubusercontent.com/harvardinformatics/ATAC-seq/refs/heads/master/atacseq/removeChrom.py
     if [ "${style}" == "ucsc" ]; then
         CHROM=\$(samtools idxstats ${bam} | cut -f1 | grep -E -v '^chr([1-9]|1[0-9]|2[0-2]|X|Y)\$')
     else
         CHROM="\$(samtools idxstats ${bam} | cut -f1 | grep -E -v '^([1-9]|1[0-9]|2[0-2]|X|Y)\$')"
     fi
-    samtools view -h -F 4 ${bam} | python3 ./remove_chrom.py - - \${CHROM} | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o ${bam_prefix}.noMT.bam -
+    samtools view -h -F 4 ${bam} | python3 /tools/remove_chrom.py - - \${CHROM} | samtools sort -m ${sort_memory}M -@ ${task.cpus} -o ${bam_prefix}.noMT.bam -
     samtools index -@ ${task.cpus} ${bam_prefix}.noMT.bam
     samtools idxstats ${bam_prefix}.noMT.bam > ${sample}_noMT_samtools_idxstats.txt
     samtools flagstat ${bam_prefix}.noMT.bam > ${sample}_noMT_flagstat.txt
