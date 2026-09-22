@@ -9,7 +9,7 @@ process build_index{
     output:
     path "genome_index.*", emit: index_files
     script:
-    decompressed_genome = fasta.name.replaceAll(/\.gz$/, '')
+    def decompressed_genome = fasta.name.replaceAll(/\.gz$/, '')
     """
     if [[ "${fasta}" == *.gz ]]; then
         gunzip -f ${fasta}
@@ -43,7 +43,7 @@ process align{
     script:
     """
     index_file=\$(basename ${index[0]})
-    index_prefix=\$(echo "\$index_file" | sed -E 's/(\\.[0-9]+)?\\.bt2\$//')
+    index_prefix=\$(echo "\$index_file" | sed -E 's/(\\.rev)?(\\.[0-9]+)?\\.bt2l?\$//')
     (bowtie2 -x \$index_prefix --very-sensitive -X ${fragment_size} --no-discordant -k ${multimapping} -p ${task.cpus} -1 ${r1} -2 ${r2}) 2> ${sample}bowtie2_alignment-metrics.txt | samtools view -b -F 2560 - > aligned.bam
     """
     stub:

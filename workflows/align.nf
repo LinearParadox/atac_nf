@@ -17,7 +17,14 @@ workflow process_fastqs {
         samples
         index_directory
     main:
-    index_file = build_index(file(params.reference_fasta)).collect()
+    if ( index_directory ) {
+        // Use a prebuilt index: either a glob of index files or a folder containing them
+        def index_path = index_directory.toString()
+        def index_glob = index_path =~ /[*?\[{]/ ? index_path : "${index_path.replaceAll('/+$', '')}/*.{bt2,bt2l}"
+        index_file = channel.fromPath(index_glob, checkIfExists: true).collect()
+    } else {
+        index_file = build_index(file(params.reference_fasta, checkIfExists: true)).collect()
+    }
     merged_reads = merge_lanes(samples)
     fastp_results = fastP(merged_reads.reads)
     aligned = align(fastp_results.reads, params.fragment_size, params.multimap, index_file)
