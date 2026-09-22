@@ -3,3 +3,4 @@ scratch/
 .nextflow.log*
 .nextflow.log
 work/
+.claude/settings.local.json
