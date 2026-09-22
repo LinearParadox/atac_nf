@@ -187,7 +187,7 @@ process aligned_idxstats{
     cpus 1
     memory 8.GB
     label "arm64_capable"
-    label "samools"
+    label "samtools"
     label "aligned_idxstats"
     input:
     tuple val(sample), file(bam), file(indexed_bam)

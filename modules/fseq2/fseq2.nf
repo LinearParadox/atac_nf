@@ -41,7 +41,8 @@ process callpeak_p{
 process callpeak_q{
     cpus 8
     memory '32 GB'
-    publishDir "${params.outdir}/per-sample-outs/${sample}/peaks/fseq2/q${qvalue}/", mode: 'copy', pattern: "*"
+    publishDir { "${params.outdir}/per-sample-outs/${sample}/peaks/fseq2/q${qvalue}/" }, mode: 'copy', pattern: "*"
+    label "fseq2_callpeak"
     input:
     tuple val(sample), path(sig)
     each qvalue
