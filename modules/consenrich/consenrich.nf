@@ -1,26 +1,3 @@
-process rename_bam{
-    cpus 1
-    memory 8.GB
-    label "arm64_capable"
-    label "samtools"
-    label "rename_bam"
-    // rename bam file for processes where files clash for consenrich. Probably can optimize this out later
-    input:
-    tuple val(sample), file(bam), file(indexed_bam)
-    output:
-    tuple val(sample), path("${sample}.bam"), path("${sample}.bam.bai"), emit: renamed_bam
-    script:
-    """
-    ln ${bam} ${sample}.bam
-    ln ${indexed_bam} ${sample}.bam.bai
-    """
-    stub:
-    """
-    ln ${bam} ${sample}.bam
-    ln ${indexed_bam} ${sample}.bam.bai
-    """
-}
-
 process consenrich{
     publishDir { "${params.outdir}/per-condition-outs/${condition}/tracks/" }, mode: 'copy', saveAs: { filename ->
         if (filename.contains("MWSE")) return "consenrich_mwse.bigWig"

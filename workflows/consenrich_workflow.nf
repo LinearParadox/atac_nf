@@ -1,5 +1,4 @@
 include { consenrich } from '../modules/consenrich/consenrich.nf'
-include { rename_bam } from '../modules/consenrich/consenrich.nf'
 include { rocco } from '../modules/consenrich/consenrich.nf'
 workflow run_consenrich {
     take:
