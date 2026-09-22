@@ -21,6 +21,18 @@ workflow {
     if ( !params.outdir ) {
         error "An output directory must be provided for the pipeline to run."
     }
+    if ( !params.condition_samplesheet ) {
+        error "A condition samplesheet (params.condition_samplesheet) must be provided for the pipeline to run."
+    }
+    if ( !params.blacklist ) {
+        error "A blacklist BED file (params.blacklist) must be provided for the pipeline to run."
+    }
+    if ( params.do_align && !params.bowtie_index && !params.reference_fasta ) {
+        error "Alignment requires either params.bowtie_index or params.reference_fasta."
+    }
+    def p_values = toThresholdList(params.p_values)
+    def q_values = toThresholdList(params.q_values)
+
     if ( params.do_align ){
         samples=channel.fromPath(params.samplesheet).splitCsv().map { fields ->
             def sample = fields[0]
