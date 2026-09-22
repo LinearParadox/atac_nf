@@ -12,7 +12,14 @@ include { fseq2_individual } from './workflows/fseq2_individual.nf'
 include { run_consenrich } from './workflows/consenrich_workflow.nf'
 include { remove_unpaired } from './modules/samtools/samtools.nf'
 include { namesort } from './modules/samtools/samtools.nf'
-include { index } from './modules/samtools/samtools.nf'
+include { flagstat } from './modules/samtools/samtools.nf'
+
+// Thresholds may come from a config list or a comma-separated CLI string (e.g. --p_values 0.05,0.01)
+def toThresholdList(value) {
+    if ( value == null || value == '' ) return []
+    if ( value instanceof Collection ) return value as List
+    return value.toString().tokenize(',').collect { v -> v.trim() as BigDecimal }
+}
 
 workflow {
     if ( !params.samplesheet){
@@ -77,27 +84,32 @@ workflow {
     namesort_prefix = primary_filtered_bam.map { sample, _bam, _bai -> "${sample}.primary.paired" }
     namesorted      = namesort(primary_filtered_bam.map { s, b, _bai -> [s, b] }, namesort_prefix)
 
-    
+    // Flagstat is shared by the MACS3 and FSeq2 FRiP calculations
+    flagstats = flagstat(namesorted).flagstat
+
+
     genrich_condition(
         file(params.condition_samplesheet),
         secondary,
         file(params.blacklist),
-        params.p_values,
-        params.q_values
+        p_values,
+        q_values
     )
     
     macs3_individual(
         namesorted,
+        flagstats,
         params.macs3_genome_size,
-        params.p_values,
-        params.q_values,
+        p_values,
+        q_values,
         params.macs3_cutoff_analysis
     )
     
     fseq2_individual(
         namesorted,
-        params.p_values,
-        params.q_values
+        flagstats,
+        p_values,
+        q_values
     )
     run_consenrich(
         primary_filtered_bam,

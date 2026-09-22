@@ -51,19 +51,17 @@ workflow genrich_condition {
     
     // Call peaks using q-value thresholds (if specified)
     if (q_values) {
-        qvalues = channel.from(q_values)
         callpeak_from_logfile_condition_q(
             logfile_condition.out.logfile,
-            qvalues
+            q_values
         )
     }
     
     // Call peaks using p-value thresholds (if specified)
     if (p_values) {
-        pvalues = channel.from(p_values)
         callpeak_from_logfile_condition_p(
             logfile_condition.out.logfile,
-            pvalues
+            p_values
         )
     }
 

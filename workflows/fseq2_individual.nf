@@ -9,23 +9,20 @@ include { frip as frip_q } from '../modules/bedtools/bedtools.nf'
 include { create_sig } from '../modules/fseq2/fseq2.nf'
 include { callpeak_p } from '../modules/fseq2/fseq2.nf'
 include { callpeak_q } from '../modules/fseq2/fseq2.nf'
-include { flagstat } from '../modules/samtools/samtools.nf'
 
 workflow fseq2_individual {
     take:
-    bam_channel  // Channel of [sample, bam_file, bai_file] tuples
+    bam_channel  // Channel of [sample, bam_file] tuples
+    flagstats    // Channel of [sample, flagstat_file] tuples
     p_values     // List of p-value thresholds
     q_values     // List of q-value thresholds
 
     main:
-    // Get flagstat for FRiP calculation
-    flagstat(bam_channel)
     sig = create_sig(bam_channel)
 
     // Call peaks using p-value thresholds (if specified)
     if (p_values) {
-        pvalues = channel.from(p_values)
-        callpeak_p(sig, pvalues)
+        callpeak_p(sig, p_values)
         peaks_p = callpeak_p.out.narrowpeak
     } else {
         peaks_p = channel.empty()
@@ -33,8 +30,7 @@ workflow fseq2_individual {
 
     // Call peaks using q-value thresholds (if specified)
     if (q_values) {
-        qvalues = channel.from(q_values)
-        callpeak_q(sig, qvalues)
+        callpeak_q(sig, q_values)
         peaks_q = callpeak_q.out.narrowpeak
     } else {
         peaks_q = channel.empty()
@@ -44,8 +40,9 @@ workflow fseq2_individual {
     // FRiP (Fraction of Reads in Peaks) Calculation
     // ========================================
 
-    // Calculate FRiP using p-value peaks if frip_pvalue is in the p_values list
-    if (p_values && p_values.contains(params.frip_pvalue)) {
+    // Calculate FRiP using p-value peaks if frip_pvalue is in the p_values list.
+    // Groovy == compares numbers by value, unlike List.contains (e.g. Double 0.05 vs BigDecimal 0.050)
+    if (p_values.any { v -> v == params.frip_pvalue }) {
         // Filter peaks_p to get only the peaks matching params.frip_pvalue
         // peaks_p emits: [sample, pvalue, peaks, summits]
         frip_peaks_p = callpeak_p.out.narrowpeak
@@ -60,7 +57,7 @@ workflow fseq2_individual {
         // Result: [sample, bam, peaks, flagstat]
         frip_input_p = bam_channel
             .join(frip_peaks_p)
-            .join(flagstat.out.flagstat)
+            .join(flagstats)
 
         frip_p(frip_input_p, 'fseq2', "p_${params.frip_pvalue}")
         frip_out_p = frip_p.out.frip
@@ -69,7 +66,7 @@ workflow fseq2_individual {
     }
 
     // Calculate FRiP using q-value peaks if frip_qvalue is in the q_values list
-    if (q_values && q_values.contains(params.frip_qvalue)) {
+    if (q_values.any { v -> v == params.frip_qvalue }) {
         // Filter peaks_q to get only the peaks matching params.frip_qvalue
         frip_peaks_q = callpeak_q.out.narrowpeak
             .filter { _sample, qvalue, _peaks, _summits ->
@@ -82,7 +79,7 @@ workflow fseq2_individual {
         // Combine: bam_channel + frip_peaks_q + flagstat
         frip_input_q = bam_channel
             .join(frip_peaks_q)
-            .join(flagstat.out.flagstat)
+            .join(flagstats)
 
         frip_q(frip_input_q, 'fseq2', "q_${params.frip_qvalue}")
         frip_out_q = frip_q.out.frip
