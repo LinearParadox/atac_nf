@@ -3,4 +3,3 @@ scratch/
 .nextflow.log*
 .nextflow.log
 work/
-.claude/
